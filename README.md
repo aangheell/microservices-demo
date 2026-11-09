@@ -45,45 +45,26 @@ Find **Protocol Buffers Descriptions** at the [`./protos` directory](/protos).
 ## Quickstart (GKE)
 
 1. Ensure you have the following requirements:
-   - [Google Cloud project](https://cloud.google.com/resource-manager/docs/creating-managing-projects#creating_a_project).
-   - Shell environment with `gcloud`, `git`, and `kubectl`.
+   - A running K8s cluster
 
 2. Clone the latest major version.
 
    ```sh
-   git clone --depth 1 --branch v0 https://github.com/GoogleCloudPlatform/microservices-demo.git
+   git clone https://github.com/aangheell/microservices-demo.git
    cd microservices-demo/
    ```
 
-   The `--depth 1` argument skips downloading git history.
-
-3. Set the Google Cloud project and region and ensure the Google Kubernetes Engine API is enabled.
-
-   ```sh
-   export PROJECT_ID=<PROJECT_ID>
-   export REGION=us-central1
-   gcloud services enable container.googleapis.com \
-     --project=${PROJECT_ID}
-   ```
-
-   Substitute `<PROJECT_ID>` with the ID of your Google Cloud project.
-
-4. Create a GKE cluster and get the credentials for it.
-
-   ```sh
-   gcloud container clusters create-auto online-boutique \
-     --project=${PROJECT_ID} --region=${REGION}
-   ```
-
-   Creating the cluster may take a few minutes.
-
-5. Deploy Online Boutique to the cluster.
+3. Deploy Online Boutique to the cluster.
 
    ```sh
    kubectl apply -f ./release/kubernetes-manifests.yaml
    ```
+   Or using the helm chart provided
+   ```sh
+   cd helm-chart &&  helm install online-boutique .
+   ```
 
-6. Wait for the pods to be ready.
+4. Wait for the pods to be ready.
 
    ```sh
    kubectl get pods
@@ -107,7 +88,7 @@ Find **Protocol Buffers Descriptions** at the [`./protos` directory](/protos).
    shippingservice-6ccc89f8fd-v686r         1/1     Running   0          2m58s
    ```
 
-7. Access the web frontend in a browser using the frontend's external IP.
+5. Access the web frontend in a browser using the frontend's external IP.
 
    ```sh
    kubectl get service frontend-external | awk '{print $4}'
@@ -115,16 +96,16 @@ Find **Protocol Buffers Descriptions** at the [`./protos` directory](/protos).
 
    Visit `http://EXTERNAL_IP` in a web browser to access your instance of Online Boutique.
 
-8. Congrats! You've deployed the default Online Boutique. To deploy a different variation of Online Boutique (e.g., with Google Cloud Operations tracing, Istio, etc.), see [Deploy Online Boutique variations with Kustomize](#deploy-online-boutique-variations-with-kustomize).
+6. Congrats! You've deployed the default Online Boutique. To deploy a different variation of Online Boutique (e.g., with Google Cloud Operations tracing, Istio, etc.), see [Deploy Online Boutique variations with Kustomize](#deploy-online-boutique-variations-with-kustomize).
 
-9. Once you are done with it, delete the GKE cluster.
+7. Once you are done with it, delete the GKE cluster.
 
    ```sh
-   gcloud container clusters delete online-boutique \
-     --project=${PROJECT_ID} --region=${REGION}
+   kubectl delete -f ./release/kubernetes-manifests.yaml
    ```
-
-   Deleting the cluster may take a few minutes.
+   Or, if installed with helm:
+   ```sh
+   helm uninstall online-boutique
 
 ## Additional deployment options
 
