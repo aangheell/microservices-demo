@@ -30,6 +30,15 @@ helm upgrade onlineboutique oci://us-docker.pkg.dev/online-boutique-ci/charts/on
     -n onlineboutique
 ```
 
+Deploy with custom component images:
+```sh
+helm upgrade onlineboutique ./helm-chart \
+    --install \
+    --set images.repository=us-docker.pkg.dev/my-project/microservices-demo \
+    --set frontend.customImage=my-custom-registry.io/custom-frontend:v1.2.3 \
+    --set cartService.customImage=my-custom-registry.io/custom-cartservice:v1.2.3
+```
+
 For the full list of configurations, see [values.yaml](./values.yaml).
 
 You could also find advanced scenarios with these blogs below:

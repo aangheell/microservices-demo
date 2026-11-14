@@ -69,7 +69,13 @@ spec:
               - ALL
           privileged: false
           readOnlyRootFilesystem: true
+        {{- if .Values.adService.customImage }}
+        image: {{ .Values.adService.customImage }}
+        {{- else if .Values.adService.image }}
+        image: {{ .Values.adService.image }}
+        {{- else }}
         image: {{ .Values.images.repository }}/{{ .Values.adService.name }}:{{ .Values.images.tag | default .Chart.AppVersion }}
+        {{- end }}
         ports:
         - containerPort: 9555
         env:

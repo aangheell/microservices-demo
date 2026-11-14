@@ -106,7 +106,13 @@ spec:
               - ALL
           privileged: false
           readOnlyRootFilesystem: true
+        {{- if .Values.loadGenerator.customImage }}
+        image: {{ .Values.loadGenerator.customImage }}
+        {{- else if .Values.loadGenerator.image }}
+        image: {{ .Values.loadGenerator.image }}
+        {{- else }}
         image: {{ .Values.images.repository }}/{{ .Values.loadGenerator.name }}:{{ .Values.images.tag | default .Chart.AppVersion }}
+        {{- end }}
         env:
         - name: FRONTEND_ADDR
           value: "{{ .Values.frontend.name }}:80"

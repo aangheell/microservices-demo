@@ -73,7 +73,13 @@ spec:
               - ALL
           privileged: false
           readOnlyRootFilesystem: true
+        {{- if .Values.cartService.customImage }}
+        image: {{ .Values.cartService.customImage }}
+        {{- else if .Values.cartService.image }}
+        image: {{ .Values.cartService.image }}
+        {{- else }}
         image: {{ .Values.images.repository }}/{{ .Values.cartService.name }}:{{ .Values.images.tag | default .Chart.AppVersion }}
+        {{- end }}
         ports:
         - containerPort: 7070
         env:
@@ -251,7 +257,11 @@ spec:
               - ALL
           privileged: false
           readOnlyRootFilesystem: true
-        {{- if .Values.cartDatabase.inClusterRedis.publicRepository }}
+        {{- if .Values.cartDatabase.inClusterRedis.customImage }}
+        image: {{ .Values.cartDatabase.inClusterRedis.customImage }}
+        {{- else if .Values.cartDatabase.inClusterRedis.image }}
+        image: {{ .Values.cartDatabase.inClusterRedis.image }}
+        {{- else if .Values.cartDatabase.inClusterRedis.publicRepository }}
         image: redis:alpine@sha256:6cbef353e480a8a6e7f10ec545f13d7d3fa85a212cdcc5ffaf5a1c818b9d3798
         {{- else }}
         image: {{ .Values.images.repository }}/redis:alpine
