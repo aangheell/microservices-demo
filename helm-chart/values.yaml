@@ -131,7 +131,7 @@ frontend:
   create: true
   name: frontend
   # Provide a custom image to take precedence over the global images.repository and tag.
-  customImage: "proget.assim.mapn:8625/docker-registry/microservices-demo/frontend:v0.10.7-v2"
+  customImage: "proget.assim.mapn:8625/docker-registry/microservices-demo/frontend:v0.10.7-v3"
   # Lifecycle hooks for container. Note: preStop exec requires a shell (like /bin/sh) in the image.
   # If using a scratch image, handle the delay in Go (time.Sleep) instead of using an exec hook.
   lifecycle: {}
@@ -142,6 +142,13 @@ frontend:
   #       command: ["/bin/sh", "-c", "sleep 5"]
   # Grace period for pod shutdown (in seconds)
   terminationGracePeriodSeconds: 30
+  # Horizontal Pod Autoscaler configuration
+  autoscaling:
+    enable: true
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: ""
   externalService: true
   cymbalBranding: false
   # One of: local, gcp, aws, azure, onprem, alibaba. When not set, defaults to "local" unless running in GKE, otherwise auto-sets to gcp.
@@ -170,6 +177,10 @@ loadGenerator:
   # Provide a custom image to take precedence over the global images.repository and tag.
   customImage: ""
   checkFrontendInitContainer: true
+  # Number of simulated concurrent users
+  users: 10
+  # Rate per second in which users are spawned
+  rate: 1
   resources:
     requests:
       cpu: 300m
