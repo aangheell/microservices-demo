@@ -45,6 +45,9 @@ spec:
       annotations:
         sidecar.istio.io/rewriteAppHTTPProbers: "true"
     spec:
+      {{- if .Values.frontend.terminationGracePeriodSeconds }}
+      terminationGracePeriodSeconds: {{ .Values.frontend.terminationGracePeriodSeconds }}
+      {{- end }}
       {{- if .Values.serviceAccounts.create }}
       serviceAccountName: {{ .Values.frontend.name }}
       {{- else }}
@@ -70,6 +73,10 @@ spec:
                 - ALL
             privileged: false
             readOnlyRootFilesystem: true
+          {{- if .Values.frontend.lifecycle }}
+          lifecycle:
+            {{- toYaml .Values.frontend.lifecycle | nindent 12 }}
+          {{- end }}
           {{- if .Values.frontend.customImage }}
           image: {{ .Values.frontend.customImage }}
           {{- else if .Values.frontend.image }}

@@ -180,7 +180,10 @@ func main() {
 		signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 		sig := <-sigChan
 
-		log.Infof("Received signal %v, initiating graceful shutdown...", sig)
+		log.Infof("Received signal %v, waiting 5 seconds for endpoint deregistration...", sig)
+		time.Sleep(5 * time.Second)
+
+		log.Infof("Initiating graceful shutdown...")
 
 		// Give active requests up to 15 seconds to drain
 		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
