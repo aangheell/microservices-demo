@@ -1,21 +1,9 @@
-# Copyright 2020 Google LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#      http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# Based on Google's Online Boutique CI (Apache 2.0), adapted to build, push and
+# deploy to a lab Kubernetes cluster through a self-hosted ARC runner.
 
 name: "Continuous Integration - Main/Release"
 on:
   push:
-    # run on pushes to main or release/*
     branches:
       - main
       - release/*
@@ -27,6 +15,15 @@ on:
       - '.github/workflows/terraform-validate-ci.yaml'
       - 'helm-chart/**'
       - '.github/workflows/helm-chart-ci.yaml'
+
+permissions:
+  contents: read
+
+# never run two deployments to the lab cluster at the same time
+concurrency:
+  group: lab-deploy
+  cancel-in-progress: false
+
 jobs:
   code-tests:
     runs-on: [self-hosted, lab-k8s]
@@ -53,70 +50,65 @@ jobs:
       timeout-minutes: 10
       run: |
         dotnet test src/cartservice/
-  deployment-tests:
-    runs-on: [self-hosted, is-enabled]
+
+  deploy-to-lab:
+    runs-on: [self-hosted, lab-k8s]
     needs: code-tests
-    strategy:
-      matrix:
-        profile: ["local-code"]
-      fail-fast: true
+    env:
+      NAMESPACE: boutique-ci
+      REGISTRY_HOST: proget.assim.mapn:8625
+      REGISTRY: proget.assim.mapn:8625/docker-registry
     steps:
     - uses: actions/checkout@v5
-    - name: Build + Deploy PR images to GKE
-      timeout-minutes: 20
-      run: |
-        PR_NUMBER=$(echo $GITHUB_REF | awk 'BEGIN { FS = "/" } ; { print $3 }')
-        NAMESPACE="pr${PR_NUMBER}"
-        echo "::set-env name=NAMESPACE::$NAMESPACE"
-        echo "::set-env name=PR_NUMBER::$PR_NUMBER"
 
-        yes | gcloud auth configure-docker us-docker.pkg.dev
-        gcloud container clusters get-credentials $PR_CLUSTER --region $REGION --project $PROJECT_ID
-        cat <<EOF | kubectl apply -f -
-        apiVersion: v1
-        kind: Namespace
-        metadata:
-          name: $NAMESPACE
-        EOF
-        echo Deploying application
+    - name: Install kubectl and skaffold
+      run: |
+        mkdir -p "$HOME/bin"
+        KVER=$(curl -fsSL https://dl.k8s.io/release/stable.txt)
+        curl -fsSL -o "$HOME/bin/kubectl" "https://dl.k8s.io/release/${KVER}/bin/linux/amd64/kubectl"
+        curl -fsSL -o "$HOME/bin/skaffold" https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64
+        chmod +x "$HOME/bin/kubectl" "$HOME/bin/skaffold"
+        echo "$HOME/bin" >> "$GITHUB_PATH"
+
+    - name: Configure kubectl from the runner's ServiceAccount
+      run: |
+        SA=/var/run/secrets/kubernetes.io/serviceaccount
+        kubectl config set-cluster lab --server=https://kubernetes.default.svc --certificate-authority=$SA/ca.crt
+        kubectl config set-credentials runner --token="$(cat $SA/token)"
+        kubectl config set-context lab --cluster=lab --user=runner --namespace="$NAMESPACE"
+        kubectl config use-context lab
+        kubectl auth can-i create deployments -n "$NAMESPACE"
+
+    - name: Build + push images, deploy to lab cluster
+      timeout-minutes: 40
+      run: |
         skaffold config set --global local-cluster false
-        skaffold run --default-repo=us-docker.pkg.dev/$PROJECT_ID/$GITHUB_REF --tag=$GITHUB_SHA --namespace=$NAMESPACE -p network-policies
-      env:
-        ACTIONS_ALLOW_UNSECURE_COMMANDS: true
-        PROJECT_ID: "online-boutique-ci"
-        PR_CLUSTER: "prs-gke-cluster"
-        REGION: "us-central1"
-    - name: Wait For Pods
+        skaffold run --default-repo="$REGISTRY" --tag="$GITHUB_SHA" --namespace="$NAMESPACE"
+
+    - name: Wait for pods
       timeout-minutes: 20
       run: |
-        set -x
-        kubectl config set-context --current --namespace=$NAMESPACE
-        kubectl wait --for=condition=available --timeout=1000s deployment/redis-cart
-        kubectl wait --for=condition=available --timeout=1000s deployment/adservice
-        kubectl wait --for=condition=available --timeout=1000s deployment/cartservice
-        kubectl wait --for=condition=available --timeout=1000s deployment/checkoutservice
-        kubectl wait --for=condition=available --timeout=1000s deployment/currencyservice
-        kubectl wait --for=condition=available --timeout=1000s deployment/emailservice
-        kubectl wait --for=condition=available --timeout=1000s deployment/frontend
-        kubectl wait --for=condition=available --timeout=1000s deployment/loadgenerator
-        kubectl wait --for=condition=available --timeout=1000s deployment/paymentservice
-        kubectl wait --for=condition=available --timeout=1000s deployment/productcatalogservice
-        kubectl wait --for=condition=available --timeout=1000s deployment/recommendationservice
-        kubectl wait --for=condition=available --timeout=1000s deployment/shippingservice
-    - name: Smoke Test
+        for D in redis-cart adservice cartservice checkoutservice currencyservice \
+                 emailservice frontend loadgenerator paymentservice \
+                 productcatalogservice recommendationservice shippingservice; do
+          kubectl wait --for=condition=available --timeout=1000s deployment/$D -n "$NAMESPACE"
+        done
+
+    - name: Smoke test
       timeout-minutes: 5
       run: |
         set -x
         # start fresh loadgenerator pod
-        kubectl delete pod -l app=loadgenerator
+        kubectl delete pod -l app=loadgenerator -n "$NAMESPACE"
+        kubectl wait --for=condition=available --timeout=300s deployment/loadgenerator -n "$NAMESPACE"
         # wait for requests to come in
         REQUEST_COUNT="0"
-        while [[ "$REQUEST_COUNT"  -lt "50"  ]]; do
+        while [[ "${REQUEST_COUNT:-0}" -lt "50" ]]; do
             sleep 5
-            REQUEST_COUNT=$(kubectl logs -l app=loadgenerator | grep Aggregated | awk '{print $2}')
+            REQUEST_COUNT=$(kubectl logs -l app=loadgenerator -n "$NAMESPACE" | grep Aggregated | awk '{print $2}')
         done
         # ensure there are no errors hitting endpoints
-        ERROR_COUNT=$(kubectl logs -l app=loadgenerator | grep Aggregated | awk '{print $3}' | sed "s/[(][^)]*[)]//g")
-        if [[ "$ERROR_COUNT" -gt "0" ]]; then
+        ERROR_COUNT=$(kubectl logs -l app=loadgenerator -n "$NAMESPACE" | grep Aggregated | awk '{print $3}' | sed "s/[(][^)]*[)]//g")
+        if [[ "${ERROR_COUNT:-0}" -gt "0" ]]; then
           exit 1
         fi
