@@ -53,7 +53,7 @@ Find **Protocol Buffers Descriptions** at the [`./protos` directory](/protos).
 2. Clone the latest major version.
 
    ```sh
-   git clone -b tsdn https://github.com/aangheell/microservices-demo.git
+   git clone https://github.com/aangheell/microservices-demo.git
    cd microservices-demo/
    ```
 
