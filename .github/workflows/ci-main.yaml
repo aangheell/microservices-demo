@@ -79,6 +79,9 @@ jobs:
         kubectl config use-context lab
         kubectl auth can-i create deployments -n "$NAMESPACE"
 
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
     - name: Build + push images, deploy to lab cluster
       timeout-minutes: 40
       run: |
@@ -91,7 +94,7 @@ jobs:
         for D in redis-cart adservice cartservice checkoutservice currencyservice \
                  emailservice frontend loadgenerator paymentservice \
                  productcatalogservice recommendationservice shippingservice; do
-          kubectl wait --for=condition=available --timeout=1000s deployment/$D -n "$NAMESPACE"
+            kubectl wait --for=condition=available --timeout=1000s deployment/$D -n "$NAMESPACE"
         done
 
     - name: Smoke test
