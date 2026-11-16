@@ -45,6 +45,9 @@ spec:
       annotations:
         sidecar.istio.io/rewriteAppHTTPProbers: "true"
     spec:
+      {{- if .Values.frontend.terminationGracePeriodSeconds }}
+      terminationGracePeriodSeconds: {{ .Values.frontend.terminationGracePeriodSeconds }}
+      {{- end }}
       {{- if .Values.serviceAccounts.create }}
       serviceAccountName: {{ .Values.frontend.name }}
       {{- else }}
@@ -70,7 +73,17 @@ spec:
                 - ALL
             privileged: false
             readOnlyRootFilesystem: true
+          {{- if .Values.frontend.lifecycle }}
+          lifecycle:
+            {{- toYaml .Values.frontend.lifecycle | nindent 12 }}
+          {{- end }}
+          {{- if .Values.frontend.customImage }}
+          image: {{ .Values.frontend.customImage }}
+          {{- else if .Values.frontend.image }}
+          image: {{ .Values.frontend.image }}
+          {{- else }}
           image: {{ .Values.images.repository }}/{{ .Values.frontend.name }}:{{ .Values.images.tag | default .Chart.AppVersion }}
+          {{- end }}
           ports:
           - containerPort: 8080
           readinessProbe:
@@ -281,5 +294,39 @@ spec:
         host: {{ .Values.frontend.name }}
         port:
           number: 80
+{{- end }}
+{{- if and .Values.frontend.autoscaling .Values.frontend.autoscaling.enable }}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ .Values.frontend.name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ .Values.frontend.name }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ .Values.frontend.name }}
+  minReplicas: {{ .Values.frontend.autoscaling.minReplicas | default 2 }}
+  maxReplicas: {{ .Values.frontend.autoscaling.maxReplicas | default 5 }}
+  metrics:
+  {{- if .Values.frontend.autoscaling.targetCPUUtilizationPercentage }}
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: {{ .Values.frontend.autoscaling.targetCPUUtilizationPercentage }}
+  {{- end }}
+  {{- if .Values.frontend.autoscaling.targetMemoryUtilizationPercentage }}
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: {{ .Values.frontend.autoscaling.targetMemoryUtilizationPercentage }}
+  {{- end }}
 {{- end }}
 {{- end }}

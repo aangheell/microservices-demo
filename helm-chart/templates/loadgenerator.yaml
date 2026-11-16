@@ -106,14 +106,20 @@ spec:
               - ALL
           privileged: false
           readOnlyRootFilesystem: true
+        {{- if .Values.loadGenerator.customImage }}
+        image: {{ .Values.loadGenerator.customImage }}
+        {{- else if .Values.loadGenerator.image }}
+        image: {{ .Values.loadGenerator.image }}
+        {{- else }}
         image: {{ .Values.images.repository }}/{{ .Values.loadGenerator.name }}:{{ .Values.images.tag | default .Chart.AppVersion }}
+        {{- end }}
         env:
         - name: FRONTEND_ADDR
           value: "{{ .Values.frontend.name }}:80"
         - name: USERS
-          value: "10"
+          value: {{ .Values.loadGenerator.users | default 10 | quote }}
         - name: RATE
-          value: "1"
+          value: {{ .Values.loadGenerator.rate | default 1 | quote }}
         resources:
           {{- toYaml .Values.loadGenerator.resources | nindent 10 }}
 {{- if .Values.networkPolicies.create }}

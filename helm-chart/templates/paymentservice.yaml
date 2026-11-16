@@ -69,7 +69,13 @@ spec:
               - ALL
           privileged: false
           readOnlyRootFilesystem: true
+        {{- if .Values.paymentService.customImage }}
+        image: {{ .Values.paymentService.customImage }}
+        {{- else if .Values.paymentService.image }}
+        image: {{ .Values.paymentService.image }}
+        {{- else }}
         image: {{ .Values.images.repository }}/{{ .Values.paymentService.name }}:{{ .Values.images.tag | default .Chart.AppVersion }}
+        {{- end }}
         ports:
         - containerPort: 50051
         env:
