@@ -29,7 +29,7 @@ on:
       - '.github/workflows/helm-chart-ci.yaml'
 jobs:
   code-tests:
-    runs-on: [self-hosted, is-enabled]
+    runs-on: [self-hosted, lab-k8s]
     steps:
     - uses: actions/checkout@v5
     - uses: actions/setup-dotnet@v5
