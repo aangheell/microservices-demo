@@ -97,7 +97,19 @@ jobs:
       timeout-minutes: 40
       run: |
         skaffold config set --global local-cluster false
-        skaffold run --default-repo="$REGISTRY" --tag="$GITHUB_SHA" --namespace="$NAMESPACE" --platform=linux/amd64 --build-concurrency=2
+        # GHCR sometimes answers "denied" for a push that works on retry, so retry.
+        # Images already pushed are skipped on the next attempt.
+        ok=0
+        for i in 1 2 3 4 5; do
+          if skaffold run --default-repo="$REGISTRY" --tag="$GITHUB_SHA" \
+               --namespace="$NAMESPACE" --platform=linux/amd64 --build-concurrency=1; then
+            ok=1
+            break
+          fi
+          echo "skaffold run failed (attempt $i of 5), retrying in 20s"
+          sleep 20
+        done
+        [ "$ok" = 1 ]
 
     - name: Wait for pods
       timeout-minutes: 20
