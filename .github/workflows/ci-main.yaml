@@ -102,7 +102,8 @@ jobs:
         ok=0
         for i in 1 2 3 4 5; do
           if skaffold run --default-repo="$REGISTRY" --tag="$GITHUB_SHA" \
-               --namespace="$NAMESPACE" --platform=linux/amd64 --build-concurrency=1; then
+               --namespace="$NAMESPACE" --platform=linux/amd64 --build-concurrency=1 \
+               --status-check=false; then
             ok=1
             break
           fi
@@ -110,6 +111,18 @@ jobs:
           sleep 20
         done
         [ "$ok" = 1 ]
+
+    - name: Attach GHCR pull secret to ServiceAccounts
+      run: |
+        # Online Boutique gives each service its own ServiceAccount, so the secret
+        # has to be on all of them, not only "default".
+        for SA in $(kubectl get sa -n "$NAMESPACE" -o name); do
+          kubectl patch "$SA" -n "$NAMESPACE" -p '{"imagePullSecrets":[{"name":"ghcr-pull"}]}'
+        done
+        # Pods created before the patch don't carry the secret: recreate the stuck ones.
+        kubectl get pods -n "$NAMESPACE" --no-headers \
+          | awk '/ImagePullBackOff|ErrImagePull/ {print $1}' \
+          | xargs -r kubectl delete pod -n "$NAMESPACE"
 
     - name: Wait for pods
       timeout-minutes: 20
