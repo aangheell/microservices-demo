@@ -97,7 +97,7 @@ jobs:
       timeout-minutes: 40
       run: |
         skaffold config set --global local-cluster false
-        skaffold run --default-repo="$REGISTRY" --tag="$GITHUB_SHA" --namespace="$NAMESPACE" --platform=linux/amd64
+        skaffold run --default-repo="$REGISTRY" --tag="$GITHUB_SHA" --namespace="$NAMESPACE" --platform=linux/amd64 --build-concurrency=2
 
     - name: Wait for pods
       timeout-minutes: 20
