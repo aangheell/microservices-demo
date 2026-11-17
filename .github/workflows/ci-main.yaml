@@ -70,6 +70,12 @@ jobs:
         curl -fsSL -o "$HOME/bin/kubectl" "https://dl.k8s.io/release/${KVER}/bin/linux/amd64/kubectl"
         curl -fsSL -o "$HOME/bin/skaffold" https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64
         chmod +x "$HOME/bin/kubectl" "$HOME/bin/skaffold"
+        # docker buildx plugin (the runner image's docker CLI doesn't ship it)
+        mkdir -p "$HOME/.docker/cli-plugins"
+        curl -fsSL -o "$HOME/.docker/cli-plugins/docker-buildx" \
+          https://github.com/docker/buildx/releases/download/v0.19.3/buildx-v0.19.3.linux-amd64
+        chmod +x "$HOME/.docker/cli-plugins/docker-buildx"
+        docker buildx version
         echo "$HOME/bin" >> "$GITHUB_PATH"
 
     - name: Configure kubectl from the runner's ServiceAccount
@@ -89,7 +95,7 @@ jobs:
       timeout-minutes: 40
       run: |
         skaffold config set --global local-cluster false
-        skaffold run --default-repo="$REGISTRY" --tag="$GITHUB_SHA" --namespace="$NAMESPACE"
+        skaffold run --default-repo="$REGISTRY" --tag="$GITHUB_SHA" --namespace="$NAMESPACE" --platform=linux/amd64
 
     - name: Wait for pods
       timeout-minutes: 20
