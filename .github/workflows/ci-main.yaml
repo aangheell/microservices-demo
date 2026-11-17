@@ -88,8 +88,10 @@ jobs:
         kubectl auth can-i create deployments -n "$NAMESPACE"
 
     - name: Log in to GHCR
+      env:
+        GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
       run: |
-        echo "${{ secrets.GITHUB_TOKEN }}" | docker login "$REGISTRY_HOST" -u "${{ github.actor }}" --password-stdin
+        echo "$GHCR_TOKEN" | docker login "$REGISTRY_HOST" -u aangheell --password-stdin
 
     - name: Build + push images, deploy to lab cluster
       timeout-minutes: 40
