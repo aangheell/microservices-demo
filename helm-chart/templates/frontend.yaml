@@ -119,6 +119,10 @@ spec:
             value: "{{ .Values.checkoutService.name }}:5050"
           - name: AD_SERVICE_ADDR
             value: "{{ .Values.adService.name }}:9555"
+          {{- if .Values.userService.create }}
+          - name: USER_SERVICE_ADDR
+            value: "{{ .Values.userService.name }}:50052"
+          {{- end }}
           - name: SHOPPING_ASSISTANT_SERVICE_ADDR
             value: "{{ .Values.shoppingAssistantService.name }}:80"
           - name: ENV_PLATFORM
@@ -235,6 +239,9 @@ spec:
     - ./{{ .Values.productCatalogService.name }}.{{ .Release.Namespace }}.svc.cluster.local
     - ./{{ .Values.recommendationService.name }}.{{ .Release.Namespace }}.svc.cluster.local
     - ./{{ .Values.shippingService.name }}.{{ .Release.Namespace }}.svc.cluster.local
+    {{- if .Values.userService.create }}
+    - ./{{ .Values.userService.name }}.{{ .Release.Namespace }}.svc.cluster.local
+    {{- end }}
     {{- if .Values.opentelemetryCollector.create }}
     - ./{{ .Values.opentelemetryCollector.name }}.{{ .Release.Namespace }}.svc.cluster.local
     {{- end }}

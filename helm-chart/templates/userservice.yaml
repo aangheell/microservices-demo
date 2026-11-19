@@ -1,0 +1,321 @@
+# Copyright 2024 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+{{- if .Values.userService.create }}
+{{- if .Values.serviceAccounts.create }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ .Values.userService.name }}
+  namespace: {{ .Release.Namespace }}
+  {{- if not .Values.serviceAccounts.annotationsOnlyForCartservice }}
+  {{- with .Values.serviceAccounts.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- end }}
+---
+{{- end }}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ .Values.userService.name }}-secret
+  namespace: {{ .Release.Namespace }}
+type: Opaque
+stringData:
+  db-password: {{ .Values.userDatabase.inClusterPostgres.dbPassword | default "shoppassword" | quote }}
+  jwt-secret: {{ .Values.userService.jwtSecret | default "online-boutique-jwt-secret-key-change-in-prod" | quote }}
+---
+{{- if .Values.userDatabase.inClusterPostgres.create }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.userDatabase.inClusterPostgres.name }}-pvc
+  namespace: {{ .Release.Namespace }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  {{- if .Values.userDatabase.inClusterPostgres.storageClassName }}
+  storageClassName: {{ .Values.userDatabase.inClusterPostgres.storageClassName | quote }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.userDatabase.inClusterPostgres.storage | default "1Gi" }}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Values.userDatabase.inClusterPostgres.name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ .Values.userDatabase.inClusterPostgres.name }}
+spec:
+  serviceName: {{ .Values.userDatabase.inClusterPostgres.name }}
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Values.userDatabase.inClusterPostgres.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.userDatabase.inClusterPostgres.name }}
+    spec:
+      containers:
+      - name: postgres
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+        {{- if .Values.userDatabase.inClusterPostgres.customImage }}
+        image: {{ .Values.userDatabase.inClusterPostgres.customImage }}
+        {{- else if .Values.userDatabase.inClusterPostgres.image }}
+        image: {{ .Values.userDatabase.inClusterPostgres.image }}
+        {{- else if .Values.userDatabase.inClusterPostgres.publicRepository }}
+        image: postgres:15-alpine
+        {{- else }}
+        image: {{ .Values.images.repository }}/postgres:15-alpine
+        {{- end }}
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_DB
+          value: {{ .Values.userDatabase.inClusterPostgres.dbName | default "usersdb" | quote }}
+        - name: POSTGRES_USER
+          value: {{ .Values.userDatabase.inClusterPostgres.dbUser | default "shopuser" | quote }}
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.userService.name }}-secret
+              key: db-password
+        volumeMounts:
+        - name: postgres-data
+          mountPath: /var/lib/postgresql/data
+        resources:
+          {{- toYaml .Values.userDatabase.inClusterPostgres.resources | nindent 10 }}
+        readinessProbe:
+          exec:
+            command: ["pg_isready", "-U", {{ .Values.userDatabase.inClusterPostgres.dbUser | default "shopuser" | quote }}, "-d", {{ .Values.userDatabase.inClusterPostgres.dbName | default "usersdb" | quote }}]
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        livenessProbe:
+          exec:
+            command: ["pg_isready", "-U", {{ .Values.userDatabase.inClusterPostgres.dbUser | default "shopuser" | quote }}, "-d", {{ .Values.userDatabase.inClusterPostgres.dbName | default "usersdb" | quote }}]
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: postgres-data
+        persistentVolumeClaim:
+          claimName: {{ .Values.userDatabase.inClusterPostgres.name }}-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.userDatabase.inClusterPostgres.name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ .Values.userDatabase.inClusterPostgres.name }}
+spec:
+  type: ClusterIP
+  selector:
+    app: {{ .Values.userDatabase.inClusterPostgres.name }}
+  ports:
+  - name: postgres
+    port: 5432
+    targetPort: 5432
+---
+{{- end }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.userService.name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ .Values.userService.name }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Values.userService.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.userService.name }}
+    spec:
+      {{- if .Values.serviceAccounts.create }}
+      serviceAccountName: {{ .Values.userService.name }}
+      {{- else }}
+      serviceAccountName: default
+      {{- end }}
+      terminationGracePeriodSeconds: 5
+      {{- if .Values.securityContext.enable }}
+      securityContext:
+        fsGroup: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        runAsUser: 1000
+        {{- if .Values.seccompProfile.enable }}
+        seccompProfile:
+          type: {{ .Values.seccompProfile.type }}
+        {{- end }}
+      {{- end }}
+      containers:
+      - name: server
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+          privileged: false
+          readOnlyRootFilesystem: true
+        {{- if .Values.userService.customImage }}
+        image: {{ .Values.userService.customImage }}
+        {{- else if .Values.userService.image }}
+        image: {{ .Values.userService.image }}
+        {{- else }}
+        image: {{ .Values.images.repository }}/{{ .Values.userService.name }}:{{ .Values.images.tag | default .Chart.AppVersion }}
+        {{- end }}
+        ports:
+        - containerPort: 50052
+        env:
+        - name: PORT
+          value: "50052"
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.userService.name }}-secret
+              key: db-password
+        {{- if .Values.userDatabase.connectionString }}
+        - name: DB_URL
+          value: {{ .Values.userDatabase.connectionString | quote }}
+        {{- else }}
+        - name: DB_URL
+          value: "postgresql://{{ .Values.userDatabase.inClusterPostgres.dbUser | default "shopuser" }}:$(DB_PASSWORD)@{{ .Values.userDatabase.inClusterPostgres.name }}:5432/{{ .Values.userDatabase.inClusterPostgres.dbName | default "usersdb" }}"
+        {{- end }}
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.userService.name }}-secret
+              key: jwt-secret
+        {{- if .Values.opentelemetryCollector.create }}
+        - name: COLLECTOR_SERVICE_ADDR
+          value: "{{ .Values.opentelemetryCollector.name }}:4317"
+        - name: OTEL_SERVICE_NAME
+          value: "{{ .Values.userService.name }}"
+        {{- end }}
+        {{- if .Values.googleCloudOperations.tracing }}
+        - name: ENABLE_TRACING
+          value: "1"
+        {{- else }}
+        - name: ENABLE_TRACING
+          value: "0"
+        {{- end }}
+        resources:
+          {{- toYaml .Values.userService.resources | nindent 10 }}
+        readinessProbe:
+          initialDelaySeconds: 15
+          periodSeconds: 10
+          grpc:
+            port: 50052
+        livenessProbe:
+          initialDelaySeconds: 15
+          periodSeconds: 10
+          grpc:
+            port: 50052
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.userService.name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ .Values.userService.name }}
+spec:
+  type: ClusterIP
+  selector:
+    app: {{ .Values.userService.name }}
+  ports:
+  - name: grpc
+    port: 50052
+    targetPort: 50052
+{{- if .Values.networkPolicies.create }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ .Values.userService.name }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  podSelector:
+    matchLabels:
+      app: {{ .Values.userService.name }}
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: {{ .Values.frontend.name }}
+    ports:
+     - port: 50052
+       protocol: TCP
+  egress:
+  - {}
+{{- end }}
+{{- if .Values.sidecars.create }}
+---
+apiVersion: networking.istio.io/v1beta1
+kind: Sidecar
+metadata:
+  name: {{ .Values.userService.name }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  workloadSelector:
+    labels:
+      app: {{ .Values.userService.name }}
+  egress:
+  - hosts:
+    - istio-system/*
+    {{- if .Values.opentelemetryCollector.create }}
+    - ./{{ .Values.opentelemetryCollector.name }}.{{ .Release.Namespace }}.svc.cluster.local
+    {{- end }}
+{{- end }}
+{{- if .Values.authorizationPolicies.create }}
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: {{ .Values.userService.name }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Values.userService.name }}
+  rules:
+  - from:
+    - source:
+        principals:
+        {{- if .Values.serviceAccounts.create }}
+        - cluster.local/ns/{{ .Release.Namespace }}/sa/{{ .Values.frontend.name }}
+        {{- else }}
+        - cluster.local/ns/{{ .Release.Namespace }}/sa/default
+        {{- end }}
+    to:
+    - operation:
+        methods:
+        - POST
+        ports:
+        - "50052"
+{{- end }}
+{{- end }}
