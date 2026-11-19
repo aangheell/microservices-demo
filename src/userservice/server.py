@@ -108,8 +108,7 @@ def serve():
     demo_pb2_grpc.add_UserServiceServicer_to_server(servicer, server)
 
     # Register health service
-    health_servicer = health_pb2_grpc.HealthServicer()
-    health_pb2_grpc.add_HealthServicer_to_server(health_servicer, server)
+    health_pb2_grpc.add_HealthServicer_to_server(servicer, server)
 
     server.add_insecure_port(f'[::]:{PORT}')
     logger.info(f"UserService started on port {PORT}")
