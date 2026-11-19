@@ -82,6 +82,16 @@
                     </div>
                     {{ end }}
 
+                    <div class="h-controls d-flex align-items-center">
+                        <div class="h-control" style="margin-left: 20px;">
+                            {{ if $.is_logged_in }}
+                            <a href="{{ $.baseUrl }}/logout" class="btn btn-sm btn-outline-secondary" style="font-size: 13px; text-decoration: none; padding: 4px 10px;">Sign Out</a>
+                            {{ else }}
+                            <a href="{{ $.baseUrl }}/login" class="btn btn-sm btn-outline-secondary" style="font-size: 13px; text-decoration: none; padding: 4px 10px;">Sign In</a>
+                            {{ end }}
+                        </div>
+                    </div>
+
                     {{ if $.assistant_enabled }}
                     <a href="{{ $.baseUrl }}/assistant" class="cart-link">
                       <img src="{{ $.baseUrl }}/static/icons/Hipster_WandIcon.svg" style="width: 22px; height: 22px;" alt="Assistant icon" class="logo" title="Assistant" />

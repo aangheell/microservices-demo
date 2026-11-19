@@ -2608,3 +2608,103 @@ func file_demo_proto_init() {
 	file_demo_proto_goTypes = nil
 	file_demo_proto_depIdxs = nil
 }
+
+// RegisterRequest is the request message for Register RPC.
+type RegisterRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Email    string `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
+	Password string `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty"`
+	Name     string `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+}
+
+func (x *RegisterRequest) Reset()         { *x = RegisterRequest{} }
+func (x *RegisterRequest) String() string { return protoimpl.X.MessageStringOf(x) }
+func (*RegisterRequest) ProtoMessage()    {}
+func (x *RegisterRequest) GetEmail() string    { if x != nil { return x.Email }; return "" }
+func (x *RegisterRequest) GetPassword() string { if x != nil { return x.Password }; return "" }
+func (x *RegisterRequest) GetName() string     { if x != nil { return x.Name }; return "" }
+
+// RegisterResponse is the response message for Register RPC.
+type RegisterResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	UserId   string `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	JwtToken string `protobuf:"bytes,2,opt,name=jwt_token,json=jwtToken,proto3" json:"jwt_token,omitempty"`
+}
+
+func (x *RegisterResponse) Reset()         { *x = RegisterResponse{} }
+func (x *RegisterResponse) String() string { return protoimpl.X.MessageStringOf(x) }
+func (*RegisterResponse) ProtoMessage()    {}
+func (x *RegisterResponse) GetUserId() string   { if x != nil { return x.UserId }; return "" }
+func (x *RegisterResponse) GetJwtToken() string { if x != nil { return x.JwtToken }; return "" }
+
+// LoginRequest is the request message for Login RPC.
+type LoginRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Email    string `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
+	Password string `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty"`
+}
+
+func (x *LoginRequest) Reset()         { *x = LoginRequest{} }
+func (x *LoginRequest) String() string { return protoimpl.X.MessageStringOf(x) }
+func (*LoginRequest) ProtoMessage()    {}
+func (x *LoginRequest) GetEmail() string    { if x != nil { return x.Email }; return "" }
+func (x *LoginRequest) GetPassword() string { if x != nil { return x.Password }; return "" }
+
+// LoginResponse is the response message for Login RPC.
+type LoginResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	UserId   string `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	JwtToken string `protobuf:"bytes,2,opt,name=jwt_token,json=jwtToken,proto3" json:"jwt_token,omitempty"`
+	Name     string `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+}
+
+func (x *LoginResponse) Reset()         { *x = LoginResponse{} }
+func (x *LoginResponse) String() string { return protoimpl.X.MessageStringOf(x) }
+func (*LoginResponse) ProtoMessage()    {}
+func (x *LoginResponse) GetUserId() string   { if x != nil { return x.UserId }; return "" }
+func (x *LoginResponse) GetJwtToken() string { if x != nil { return x.JwtToken }; return "" }
+func (x *LoginResponse) GetName() string     { if x != nil { return x.Name }; return "" }
+
+// GetUserRequest is the request message for GetUser RPC.
+type GetUserRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	UserId string `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+}
+
+func (x *GetUserRequest) Reset()         { *x = GetUserRequest{} }
+func (x *GetUserRequest) String() string { return protoimpl.X.MessageStringOf(x) }
+func (*GetUserRequest) ProtoMessage()    {}
+func (x *GetUserRequest) GetUserId() string { if x != nil { return x.UserId }; return "" }
+
+// GetUserResponse is the response message for GetUser RPC.
+type GetUserResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	UserId string `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Email  string `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
+	Name   string `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+}
+
+func (x *GetUserResponse) Reset()         { *x = GetUserResponse{} }
+func (x *GetUserResponse) String() string { return protoimpl.X.MessageStringOf(x) }
+func (*GetUserResponse) ProtoMessage()    {}
+func (x *GetUserResponse) GetUserId() string { if x != nil { return x.UserId }; return "" }
+func (x *GetUserResponse) GetEmail() string  { if x != nil { return x.Email }; return "" }
+func (x *GetUserResponse) GetName() string   { if x != nil { return x.Name }; return "" }
