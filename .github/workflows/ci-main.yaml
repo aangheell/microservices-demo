@@ -42,12 +42,22 @@ jobs:
     - name: Go Unit Tests
       timeout-minutes: 10
       run: |
-        for SERVICE in "shippingservice" "productcatalogservice"; do
+        for SERVICE in "shippingservice" "productcatalogservice" "frontend"; do
           echo "testing $SERVICE..."
           pushd src/$SERVICE
           go test
           popd
         done
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    - name: Python Unit Tests
+      timeout-minutes: 10
+      run: |
+        python -m venv "$RUNNER_TEMP/userservice-venv"
+        . "$RUNNER_TEMP/userservice-venv/bin/activate"
+        pip install -q -r src/userservice/requirements.txt pytest
+        cd src/userservice && python -m pytest -q
     - name: C# Unit Tests
       timeout-minutes: 10
       run: |
@@ -93,6 +103,11 @@ jobs:
       run: |
         echo "$GHCR_TOKEN" | docker login "$REGISTRY_HOST" -u aangheell --password-stdin
 
+    - name: Ensure userservice secret exists
+      run: |
+        # Creates random credentials on first deploy only; never rotates them.
+        ./kustomize/components/user-service/create-secret.sh "$NAMESPACE"
+
     - name: Build + push images, deploy to lab cluster
       timeout-minutes: 40
       run: |
@@ -129,9 +144,11 @@ jobs:
       run: |
         for D in redis-cart adservice cartservice checkoutservice currencyservice \
                  emailservice frontend loadgenerator paymentservice \
-                 productcatalogservice recommendationservice shippingservice; do
+                 productcatalogservice recommendationservice shippingservice \
+                 userservice; do
           kubectl wait --for=condition=available --timeout=1000s deployment/$D -n "$NAMESPACE"
         done
+        kubectl rollout status statefulset/postgres-user --timeout=600s -n "$NAMESPACE"
 
     - name: Smoke test
       timeout-minutes: 5

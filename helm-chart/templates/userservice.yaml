@@ -13,6 +13,14 @@
 # limitations under the License.
 
 {{- if .Values.userService.create }}
+{{- $secretName := .Values.userService.existingSecret | default (printf "%s-secret" .Values.userService.name) }}
+{{- $pg := .Values.userDatabase.inClusterPostgres }}
+{{- $dbHost := .Values.userDatabase.externalHost }}
+{{- if $pg.create }}
+{{- $dbHost = $pg.name }}
+{{- else if not $dbHost }}
+{{- fail "userDatabase.externalHost is required when userDatabase.inClusterPostgres.create is false" }}
+{{- end }}
 {{- if .Values.serviceAccounts.create }}
 apiVersion: v1
 kind: ServiceAccount
@@ -27,50 +35,89 @@ metadata:
   {{- end }}
 ---
 {{- end }}
+{{- if not .Values.userService.existingSecret }}
+{{- /*
+  Credentials are never given defaults. Unless set explicitly, they are
+  generated on first install and read back from the cluster on upgrade, so they
+  stay stable. Postgres only reads its password when it first initialises the
+  volume, so db-password must not change while the data volume exists.
+*/}}
+{{- $existing := lookup "v1" "Secret" .Release.Namespace $secretName }}
+{{- $existingData := dict }}
+{{- if $existing }}
+{{- $existingData = $existing.data }}
+{{- end }}
+{{- $dbPassword := .Values.userDatabase.dbPassword }}
+{{- if not $dbPassword }}
+{{- $dbPassword = (get $existingData "db-password" | b64dec) | default (randAlphaNum 40) }}
+{{- end }}
+{{- $jwtSecret := .Values.userService.jwtSecret }}
+{{- if not $jwtSecret }}
+{{- $jwtSecret = (get $existingData "jwt-secret" | b64dec) | default (randAlphaNum 48) }}
+{{- end }}
+{{- if lt (len $jwtSecret) 32 }}
+{{- fail "userService.jwtSecret must be at least 32 characters" }}
+{{- end }}
 apiVersion: v1
 kind: Secret
 metadata:
-  name: {{ .Values.userService.name }}-secret
+  name: {{ $secretName }}
   namespace: {{ .Release.Namespace }}
+  annotations:
+    # Keep the credentials on uninstall: the Postgres volume outlives the
+    # release, and a reinstall must reuse the same password.
+    helm.sh/resource-policy: keep
 type: Opaque
-stringData:
-  db-password: {{ .Values.userDatabase.inClusterPostgres.dbPassword | default "shoppassword" | quote }}
-  jwt-secret: {{ .Values.userService.jwtSecret | default "online-boutique-jwt-secret-key-change-in-prod" | quote }}
+data:
+  db-password: {{ $dbPassword | b64enc | quote }}
+  jwt-secret: {{ $jwtSecret | b64enc | quote }}
 ---
-{{- if .Values.userDatabase.inClusterPostgres.create }}
+{{- end }}
+{{- if $pg.create }}
+{{- if .Values.serviceAccounts.create }}
 apiVersion: v1
-kind: PersistentVolumeClaim
+kind: ServiceAccount
 metadata:
-  name: {{ .Values.userDatabase.inClusterPostgres.name }}-pvc
+  name: {{ $pg.name }}
   namespace: {{ .Release.Namespace }}
-spec:
-  accessModes:
-    - ReadWriteOnce
-  {{- if .Values.userDatabase.inClusterPostgres.storageClassName }}
-  storageClassName: {{ .Values.userDatabase.inClusterPostgres.storageClassName | quote }}
-  {{- end }}
-  resources:
-    requests:
-      storage: {{ .Values.userDatabase.inClusterPostgres.storage | default "1Gi" }}
 ---
+{{- end }}
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ .Values.userDatabase.inClusterPostgres.name }}
+  name: {{ $pg.name }}
   namespace: {{ .Release.Namespace }}
   labels:
-    app: {{ .Values.userDatabase.inClusterPostgres.name }}
+    app: {{ $pg.name }}
 spec:
-  serviceName: {{ .Values.userDatabase.inClusterPostgres.name }}
+  serviceName: {{ $pg.name }}
   replicas: 1
   selector:
     matchLabels:
-      app: {{ .Values.userDatabase.inClusterPostgres.name }}
+      app: {{ $pg.name }}
   template:
     metadata:
       labels:
-        app: {{ .Values.userDatabase.inClusterPostgres.name }}
+        app: {{ $pg.name }}
     spec:
+      {{- if .Values.serviceAccounts.create }}
+      serviceAccountName: {{ $pg.name }}
+      {{- else }}
+      serviceAccountName: default
+      {{- end }}
+      terminationGracePeriodSeconds: 30
+      {{- if .Values.securityContext.enable }}
+      securityContext:
+        # uid/gid 70 is the "postgres" user in the official Alpine image.
+        fsGroup: 70
+        runAsGroup: 70
+        runAsNonRoot: true
+        runAsUser: 70
+        {{- if .Values.seccompProfile.enable }}
+        seccompProfile:
+          type: {{ .Values.seccompProfile.type }}
+        {{- end }}
+      {{- end }}
       containers:
       - name: postgres
         securityContext:
@@ -78,62 +125,151 @@ spec:
           capabilities:
             drop:
               - ALL
-        {{- if .Values.userDatabase.inClusterPostgres.customImage }}
-        image: {{ .Values.userDatabase.inClusterPostgres.customImage }}
-        {{- else if .Values.userDatabase.inClusterPostgres.image }}
-        image: {{ .Values.userDatabase.inClusterPostgres.image }}
-        {{- else if .Values.userDatabase.inClusterPostgres.publicRepository }}
+          privileged: false
+          readOnlyRootFilesystem: true
+        {{- if $pg.customImage }}
+        image: {{ $pg.customImage }}
+        {{- else if $pg.image }}
+        image: {{ $pg.image }}
+        {{- else if $pg.publicRepository }}
         image: postgres:15-alpine
         {{- else }}
         image: {{ .Values.images.repository }}/postgres:15-alpine
         {{- end }}
         ports:
-        - containerPort: 5432
+        - name: postgres
+          containerPort: 5432
         env:
         - name: POSTGRES_DB
-          value: {{ .Values.userDatabase.inClusterPostgres.dbName | default "usersdb" | quote }}
+          value: {{ .Values.userDatabase.dbName | quote }}
         - name: POSTGRES_USER
-          value: {{ .Values.userDatabase.inClusterPostgres.dbUser | default "shopuser" | quote }}
+          value: {{ .Values.userDatabase.dbUser | quote }}
         - name: POSTGRES_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: {{ .Values.userService.name }}-secret
+              name: {{ $secretName }}
               key: db-password
+        # A subdirectory, because a fresh volume's root may contain lost+found,
+        # which makes initdb refuse to run.
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
         volumeMounts:
-        - name: postgres-data
+        - name: data
           mountPath: /var/lib/postgresql/data
+        - name: run
+          mountPath: /var/run/postgresql
+        - name: tmp
+          mountPath: /tmp
         resources:
-          {{- toYaml .Values.userDatabase.inClusterPostgres.resources | nindent 10 }}
+          {{- toYaml $pg.resources | nindent 10 }}
         readinessProbe:
           exec:
-            command: ["pg_isready", "-U", {{ .Values.userDatabase.inClusterPostgres.dbUser | default "shopuser" | quote }}, "-d", {{ .Values.userDatabase.inClusterPostgres.dbName | default "usersdb" | quote }}]
+            command: ["pg_isready", "-U", {{ .Values.userDatabase.dbUser | quote }}, "-d", {{ .Values.userDatabase.dbName | quote }}]
           initialDelaySeconds: 10
           periodSeconds: 5
         livenessProbe:
           exec:
-            command: ["pg_isready", "-U", {{ .Values.userDatabase.inClusterPostgres.dbUser | default "shopuser" | quote }}, "-d", {{ .Values.userDatabase.inClusterPostgres.dbName | default "usersdb" | quote }}]
+            command: ["pg_isready", "-U", {{ .Values.userDatabase.dbUser | quote }}, "-d", {{ .Values.userDatabase.dbName | quote }}]
           initialDelaySeconds: 30
           periodSeconds: 10
       volumes:
-      - name: postgres-data
-        persistentVolumeClaim:
-          claimName: {{ .Values.userDatabase.inClusterPostgres.name }}-pvc
+      - name: run
+        emptyDir: {}
+      - name: tmp
+        emptyDir: {}
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      {{- if $pg.storageClassName }}
+      storageClassName: {{ $pg.storageClassName | quote }}
+      {{- end }}
+      resources:
+        requests:
+          storage: {{ $pg.storage | default "1Gi" }}
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ .Values.userDatabase.inClusterPostgres.name }}
+  name: {{ $pg.name }}
   namespace: {{ .Release.Namespace }}
   labels:
-    app: {{ .Values.userDatabase.inClusterPostgres.name }}
+    app: {{ $pg.name }}
 spec:
   type: ClusterIP
   selector:
-    app: {{ .Values.userDatabase.inClusterPostgres.name }}
+    app: {{ $pg.name }}
   ports:
-  - name: postgres
+  - name: tcp-postgres
     port: 5432
     targetPort: 5432
+{{- if .Values.networkPolicies.create }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ $pg.name }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  podSelector:
+    matchLabels:
+      app: {{ $pg.name }}
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: {{ .Values.userService.name }}
+    ports:
+     - port: 5432
+       protocol: TCP
+  egress:
+  - {}
+{{- end }}
+{{- if .Values.sidecars.create }}
+---
+apiVersion: networking.istio.io/v1beta1
+kind: Sidecar
+metadata:
+  name: {{ $pg.name }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  workloadSelector:
+    labels:
+      app: {{ $pg.name }}
+  egress:
+  - hosts:
+    - istio-system/*
+{{- end }}
+{{- if .Values.authorizationPolicies.create }}
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: {{ $pg.name }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ $pg.name }}
+  rules:
+  - from:
+    - source:
+        principals:
+        {{- if .Values.serviceAccounts.create }}
+        - cluster.local/ns/{{ .Release.Namespace }}/sa/{{ .Values.userService.name }}
+        {{- else }}
+        - cluster.local/ns/{{ .Release.Namespace }}/sa/default
+        {{- end }}
+    to:
+    - operation:
+        ports:
+        - "5432"
+{{- end }}
 ---
 {{- end }}
 apiVersion: apps/v1
@@ -190,22 +326,25 @@ spec:
         env:
         - name: PORT
           value: "50052"
+        - name: DB_HOST
+          value: {{ $dbHost | quote }}
+        - name: DB_PORT
+          value: {{ .Values.userDatabase.port | default 5432 | quote }}
+        - name: DB_NAME
+          value: {{ .Values.userDatabase.dbName | quote }}
+        - name: DB_USER
+          value: {{ .Values.userDatabase.dbUser | quote }}
+        - name: DB_SSLMODE
+          value: {{ .Values.userDatabase.sslMode | default "prefer" | quote }}
         - name: DB_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: {{ .Values.userService.name }}-secret
+              name: {{ $secretName }}
               key: db-password
-        {{- if .Values.userDatabase.connectionString }}
-        - name: DB_URL
-          value: {{ .Values.userDatabase.connectionString | quote }}
-        {{- else }}
-        - name: DB_URL
-          value: "postgresql://{{ .Values.userDatabase.inClusterPostgres.dbUser | default "shopuser" }}:$(DB_PASSWORD)@{{ .Values.userDatabase.inClusterPostgres.name }}:5432/{{ .Values.userDatabase.inClusterPostgres.dbName | default "usersdb" }}"
-        {{- end }}
         - name: JWT_SECRET
           valueFrom:
             secretKeyRef:
-              name: {{ .Values.userService.name }}-secret
+              name: {{ $secretName }}
               key: jwt-secret
         {{- if .Values.opentelemetryCollector.create }}
         - name: COLLECTOR_SERVICE_ADDR
@@ -222,11 +361,14 @@ spec:
         {{- end }}
         resources:
           {{- toYaml .Values.userService.resources | nindent 10 }}
+        # Readiness includes a database check; liveness deliberately does not,
+        # so a database outage takes pods out of rotation without restarting them.
         readinessProbe:
-          initialDelaySeconds: 15
+          initialDelaySeconds: 5
           periodSeconds: 10
           grpc:
             port: 50052
+            service: hipstershop.UserService
         livenessProbe:
           initialDelaySeconds: 15
           periodSeconds: 10
@@ -287,6 +429,9 @@ spec:
   egress:
   - hosts:
     - istio-system/*
+    {{- if $pg.create }}
+    - ./{{ $pg.name }}.{{ .Release.Namespace }}.svc.cluster.local
+    {{- end }}
     {{- if .Values.opentelemetryCollector.create }}
     - ./{{ .Values.opentelemetryCollector.name }}.{{ .Release.Namespace }}.svc.cluster.local
     {{- end }}

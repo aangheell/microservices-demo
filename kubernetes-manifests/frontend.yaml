@@ -82,6 +82,11 @@ spec:
             value: "adservice:9555"
           - name: USER_SERVICE_ADDR
             value: "userservice:50052"
+          - name: JWT_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: userservice-secret
+                key: jwt-secret
           - name: SHOPPING_ASSISTANT_SERVICE_ADDR
             value: "shoppingassistantservice:80"
           # # ENV_PLATFORM: One of: local, gcp, aws, azure, onprem, alibaba

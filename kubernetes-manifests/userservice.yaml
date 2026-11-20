@@ -12,25 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: v1
-kind: Secret
-metadata:
-  name: userservice-secret
-type: Opaque
-stringData:
-  db-password: "shoppassword"
-  jwt-secret: "online-boutique-jwt-secret-key-change-in-prod"
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: postgres-user-pvc
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 1Gi
+# userservice and its Postgres database.
+#
+# Credentials are NOT defined here. Both pods (and the frontend) read them from
+# the Secret "userservice-secret" (keys: db-password, jwt-secret), which must
+# exist before deploying. Create it once per namespace with:
+#
+#   ./kustomize/components/user-service/create-secret.sh [namespace]
 ---
 apiVersion: apps/v1
 kind: StatefulSet
@@ -49,11 +37,27 @@ spec:
       labels:
         app: postgres-user
     spec:
+      serviceAccountName: postgres-user
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        # uid/gid 70 is the "postgres" user in the official Alpine image.
+        fsGroup: 70
+        runAsGroup: 70
+        runAsNonRoot: true
+        runAsUser: 70
       containers:
       - name: postgres
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+          privileged: false
+          readOnlyRootFilesystem: true
         image: postgres:15-alpine
         ports:
-        - containerPort: 5432
+        - name: postgres
+          containerPort: 5432
         env:
         - name: POSTGRES_DB
           value: "usersdb"
@@ -64,9 +68,17 @@ spec:
             secretKeyRef:
               name: userservice-secret
               key: db-password
+        # A subdirectory, because a fresh volume's root may contain lost+found,
+        # which makes initdb refuse to run.
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
         volumeMounts:
-        - name: postgres-data
+        - name: data
           mountPath: /var/lib/postgresql/data
+        - name: run
+          mountPath: /var/run/postgresql
+        - name: tmp
+          mountPath: /tmp
         resources:
           requests:
             cpu: 100m
@@ -85,9 +97,19 @@ spec:
           initialDelaySeconds: 30
           periodSeconds: 10
       volumes:
-      - name: postgres-data
-        persistentVolumeClaim:
-          claimName: postgres-user-pvc
+      - name: run
+        emptyDir: {}
+      - name: tmp
+        emptyDir: {}
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 1Gi
 ---
 apiVersion: v1
 kind: Service
@@ -100,9 +122,14 @@ spec:
   selector:
     app: postgres-user
   ports:
-  - name: postgres
+  - name: tcp-postgres
     port: 5432
     targetPort: 5432
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: postgres-user
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -120,8 +147,6 @@ spec:
         app: userservice
     spec:
       serviceAccountName: userservice
-      imagePullSecrets:
-      - name: ghcr-pull
       terminationGracePeriodSeconds: 5
       securityContext:
         fsGroup: 1000
@@ -137,20 +162,25 @@ spec:
               - ALL
           privileged: false
           readOnlyRootFilesystem: true
-        image: ghcr.io/aangheell/microservices-demo/userservice:test
-        imagePullPolicy: Always
+        image: userservice
         ports:
         - containerPort: 50052
         env:
         - name: PORT
           value: "50052"
+        - name: DB_HOST
+          value: "postgres-user"
+        - name: DB_PORT
+          value: "5432"
+        - name: DB_NAME
+          value: "usersdb"
+        - name: DB_USER
+          value: "shopuser"
         - name: DB_PASSWORD
           valueFrom:
             secretKeyRef:
               name: userservice-secret
               key: db-password
-        - name: DB_URL
-          value: "postgresql://shopuser:$(DB_PASSWORD)@postgres-user:5432/usersdb"
         - name: JWT_SECRET
           valueFrom:
             secretKeyRef:
@@ -165,11 +195,14 @@ spec:
           limits:
             cpu: 200m
             memory: 128Mi
+        # Readiness includes a database check; liveness deliberately does not,
+        # so a database outage takes pods out of rotation without restarting them.
         readinessProbe:
-          initialDelaySeconds: 15
+          initialDelaySeconds: 5
           periodSeconds: 10
           grpc:
             port: 50052
+            service: hipstershop.UserService
         livenessProbe:
           initialDelaySeconds: 15
           periodSeconds: 10
@@ -195,5 +228,3 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: userservice
-imagePullSecrets:
-- name: ghcr-pull

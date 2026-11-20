@@ -1,0 +1,230 @@
+# Copyright 2024 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# userservice and its Postgres database.
+#
+# Credentials are NOT defined here. Both pods (and the frontend) read them from
+# the Secret "userservice-secret" (keys: db-password, jwt-secret), which must
+# exist before deploying. Create it once per namespace with:
+#
+#   ./create-secret.sh [namespace]
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres-user
+  labels:
+    app: postgres-user
+spec:
+  serviceName: postgres-user
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-user
+  template:
+    metadata:
+      labels:
+        app: postgres-user
+    spec:
+      serviceAccountName: postgres-user
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        # uid/gid 70 is the "postgres" user in the official Alpine image.
+        fsGroup: 70
+        runAsGroup: 70
+        runAsNonRoot: true
+        runAsUser: 70
+      containers:
+      - name: postgres
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+          privileged: false
+          readOnlyRootFilesystem: true
+        image: postgres:15-alpine
+        ports:
+        - name: postgres
+          containerPort: 5432
+        env:
+        - name: POSTGRES_DB
+          value: "usersdb"
+        - name: POSTGRES_USER
+          value: "shopuser"
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: userservice-secret
+              key: db-password
+        # A subdirectory, because a fresh volume's root may contain lost+found,
+        # which makes initdb refuse to run.
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/postgresql/data
+        - name: run
+          mountPath: /var/run/postgresql
+        - name: tmp
+          mountPath: /tmp
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 200m
+            memory: 512Mi
+        readinessProbe:
+          exec:
+            command: ["pg_isready", "-U", "shopuser", "-d", "usersdb"]
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        livenessProbe:
+          exec:
+            command: ["pg_isready", "-U", "shopuser", "-d", "usersdb"]
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: run
+        emptyDir: {}
+      - name: tmp
+        emptyDir: {}
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-user
+  labels:
+    app: postgres-user
+spec:
+  type: ClusterIP
+  selector:
+    app: postgres-user
+  ports:
+  - name: tcp-postgres
+    port: 5432
+    targetPort: 5432
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: postgres-user
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: userservice
+  labels:
+    app: userservice
+spec:
+  selector:
+    matchLabels:
+      app: userservice
+  template:
+    metadata:
+      labels:
+        app: userservice
+    spec:
+      serviceAccountName: userservice
+      terminationGracePeriodSeconds: 5
+      securityContext:
+        fsGroup: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        runAsUser: 1000
+      containers:
+      - name: server
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+          privileged: false
+          readOnlyRootFilesystem: true
+        image: us-central1-docker.pkg.dev/google-samples/microservices-demo/userservice:v0.10.4
+        ports:
+        - containerPort: 50052
+        env:
+        - name: PORT
+          value: "50052"
+        - name: DB_HOST
+          value: "postgres-user"
+        - name: DB_PORT
+          value: "5432"
+        - name: DB_NAME
+          value: "usersdb"
+        - name: DB_USER
+          value: "shopuser"
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: userservice-secret
+              key: db-password
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: userservice-secret
+              key: jwt-secret
+        - name: ENABLE_TRACING
+          value: "0"
+        resources:
+          requests:
+            cpu: 100m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 128Mi
+        # Readiness includes a database check; liveness deliberately does not,
+        # so a database outage takes pods out of rotation without restarting them.
+        readinessProbe:
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          grpc:
+            port: 50052
+            service: hipstershop.UserService
+        livenessProbe:
+          initialDelaySeconds: 15
+          periodSeconds: 10
+          grpc:
+            port: 50052
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: userservice
+  labels:
+    app: userservice
+spec:
+  type: ClusterIP
+  selector:
+    app: userservice
+  ports:
+  - name: grpc
+    port: 50052
+    targetPort: 50052
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: userservice

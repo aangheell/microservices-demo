@@ -37,3 +37,5 @@ images:
   newTag: CONTAINER_IMAGES_TAG
 - name: us-central1-docker.pkg.dev/google-samples/microservices-demo/shippingservice
   newTag: CONTAINER_IMAGES_TAG
+- name: us-central1-docker.pkg.dev/google-samples/microservices-demo/userservice
+  newTag: CONTAINER_IMAGES_TAG

@@ -88,6 +88,7 @@ These changes directly affect `cartservice`.
 - [**Do not expose the `frontend` publicly**](components/non-public-frontend)
 - [**Set the `frontend` to manage only one single shared session**](components/single-shared-session)
 - [**Configure `Istio` service mesh resources**](components/service-mesh-istio)
+- [**Add user accounts (sign in / register)**](components/user-service)
 
 ### Select variations
 
