@@ -27,6 +27,18 @@ resources:
  - recommendationservice.yaml
  - shippingservice.yaml
  - userservice.yaml
+# Pull images from the private GHCR registry. Pods copy their ServiceAccount's
+# imagePullSecrets only when they are created, so the secret must be on every
+# ServiceAccount before any pod exists. The "ghcr-pull" Secret itself is created
+# in the cluster outside git; without it, pods still pull public images.
+patches:
+- target:
+    kind: ServiceAccount
+  patch: |-
+    - op: add
+      path: /imagePullSecrets
+      value:
+      - name: ghcr-pull
 # components:
 # - ../kustomize/components/cymbal-branding
 # - ../kustomize/components/google-cloud-operations
