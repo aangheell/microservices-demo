@@ -37,5 +37,7 @@ images:
   newName: CONTAINER_IMAGES_REGISTRY/recommendationservice
 - name: us-central1-docker.pkg.dev/google-samples/microservices-demo/shippingservice
   newName: CONTAINER_IMAGES_REGISTRY/shippingservice
+- name: us-central1-docker.pkg.dev/google-samples/microservices-demo/userservice
+  newName: CONTAINER_IMAGES_REGISTRY/userservice
 - name: redis
   newName: CONTAINER_IMAGES_REGISTRY/redis

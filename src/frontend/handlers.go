@@ -557,6 +557,7 @@ func injectCommonTemplateData(r *http.Request, payload map[string]interface{}) m
 		"platform_css":      plat.css,
 		"platform_name":     plat.provider,
 		"is_cymbal_brand":   isCymbalBrand,
+		"user_enabled":      userAuthEnabled,
 		"is_logged_in":      isLoggedIn(r),
 		"assistant_enabled": assistantEnabled,
 		"deploymentDetails": deploymentDetailsMap,

@@ -47,12 +47,22 @@ jobs:
     - name: Go Unit Tests
       timeout-minutes: 10
       run: |
-        for GO_PACKAGE in "shippingservice" "productcatalogservice" "frontend/validator"; do
+        for GO_PACKAGE in "shippingservice" "productcatalogservice" "frontend" "frontend/validator"; do
           echo "Testing $GO_PACKAGE..."
           pushd src/$GO_PACKAGE
           go test
           popd
         done
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    - name: Python Unit Tests
+      timeout-minutes: 10
+      run: |
+        python -m venv "$RUNNER_TEMP/userservice-venv"
+        . "$RUNNER_TEMP/userservice-venv/bin/activate"
+        pip install -q -r src/userservice/requirements.txt pytest
+        cd src/userservice && python -m pytest -q
     - name: C# Unit Tests
       timeout-minutes: 10
       run: |

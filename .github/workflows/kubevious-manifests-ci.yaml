@@ -40,7 +40,11 @@ jobs:
         uses: kubevious/cli@v1.0.64
         with:
           manifests: kubernetes-manifests
-          skip_rules: container-latest-image
+          # userservice-secret is created outside git (see
+          # kustomize/components/user-service/create-secret.sh), so references
+          # to it cannot be resolved from these files alone.
+          # Space-separated: the action passes this value to the CLI verbatim.
+          skip_rules: container-latest-image container-env-secret-ref
 
       - name: Validate helm-chart
         id: helm-chart-validation

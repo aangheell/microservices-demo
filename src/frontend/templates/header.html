@@ -82,6 +82,7 @@
                     </div>
                     {{ end }}
 
+                    {{ if $.user_enabled }}
                     <div class="h-controls d-flex align-items-center">
                         <div class="h-control" style="margin-left: 20px;">
                             {{ if $.is_logged_in }}
@@ -91,6 +92,7 @@
                             {{ end }}
                         </div>
                     </div>
+                    {{ end }}
 
                     {{ if $.assistant_enabled }}
                     <a href="{{ $.baseUrl }}/assistant" class="cart-link">

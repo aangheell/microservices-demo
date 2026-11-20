@@ -281,11 +281,27 @@ userService:
     limits:
       cpu: 200m
       memory: 128Mi
-  jwtSecret: "online-boutique-jwt-secret-key-change-in-prod"
+  # Key used to sign login tokens (HS256), at least 32 characters. Leave empty to
+  # generate one on first install; it is then kept across upgrades.
+  jwtSecret: ""
+  # Use a Secret you manage instead of the chart's. It must contain the keys
+  # "db-password" and "jwt-secret". When set, jwtSecret and
+  # userDatabase.dbPassword are ignored.
+  existingSecret: ""
 
 userDatabase:
   type: postgres
-  connectionString: ""
+  dbName: usersdb
+  dbUser: shopuser
+  # Leave empty to generate one on first install; it is then kept across
+  # upgrades. Postgres only reads it when it initialises a new volume.
+  dbPassword: ""
+  # Connection settings for an external Postgres, used when
+  # inClusterPostgres.create is false.
+  externalHost: ""
+  port: 5432
+  # libpq sslmode: disable, prefer, require, verify-ca or verify-full.
+  sslMode: prefer
   inClusterPostgres:
     create: true
     name: postgres-user
@@ -293,9 +309,6 @@ userDatabase:
     publicRepository: true
     # Provide a custom image to take precedence over the default postgres image and global images.repository.
     customImage: ""
-    dbName: "usersdb"
-    dbUser: "shopuser"
-    dbPassword: "shoppassword"
     storage: 1Gi
     storageClassName: ""
     resources:

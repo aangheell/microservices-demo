@@ -37,3 +37,5 @@ images:
   tagSuffix: CONTAINER_IMAGES_TAG_SUFFIX
 - name: us-central1-docker.pkg.dev/google-samples/microservices-demo/shippingservice
   tagSuffix: CONTAINER_IMAGES_TAG_SUFFIX
+- name: us-central1-docker.pkg.dev/google-samples/microservices-demo/userservice
+  tagSuffix: CONTAINER_IMAGES_TAG_SUFFIX

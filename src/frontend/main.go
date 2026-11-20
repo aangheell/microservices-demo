@@ -46,6 +46,7 @@ const (
 	cookieSessionID = cookiePrefix + "session-id"
 	cookieCurrency  = cookiePrefix + "currency"
 	cookieUserJWT   = cookiePrefix + "user-jwt"
+	cookieCSRF      = cookiePrefix + "csrf"
 )
 
 var (
@@ -143,7 +144,6 @@ func main() {
 	mustMapEnv(&svc.shippingSvcAddr, "SHIPPING_SERVICE_ADDR")
 	mustMapEnv(&svc.adSvcAddr, "AD_SERVICE_ADDR")
 	mustMapEnv(&svc.shoppingAssistantSvcAddr, "SHOPPING_ASSISTANT_SERVICE_ADDR")
-	mustMapEnv(&svc.userSvcAddr, "USER_SERVICE_ADDR")
 
 	mustConnGRPC(ctx, &svc.currencySvcConn, svc.currencySvcAddr)
 	mustConnGRPC(ctx, &svc.productCatalogSvcConn, svc.productCatalogSvcAddr)
@@ -152,7 +152,19 @@ func main() {
 	mustConnGRPC(ctx, &svc.shippingSvcConn, svc.shippingSvcAddr)
 	mustConnGRPC(ctx, &svc.checkoutSvcConn, svc.checkoutSvcAddr)
 	mustConnGRPC(ctx, &svc.adSvcConn, svc.adSvcAddr)
-	mustConnGRPC(ctx, &svc.userSvcConn, svc.userSvcAddr)
+
+	// Accounts are optional: without USER_SERVICE_ADDR the shop runs as before.
+	if svc.userSvcAddr = os.Getenv("USER_SERVICE_ADDR"); svc.userSvcAddr != "" {
+		jwtSecret = []byte(os.Getenv("JWT_SECRET"))
+		if len(jwtSecret) < jwtSecretMinLen {
+			log.Fatalf("JWT_SECRET must be at least %d bytes when USER_SERVICE_ADDR is set", jwtSecretMinLen)
+		}
+		mustConnGRPC(ctx, &svc.userSvcConn, svc.userSvcAddr)
+		userAuthEnabled = true
+		log.Info("User accounts enabled.")
+	} else {
+		log.Info("User accounts disabled (USER_SERVICE_ADDR not set).")
+	}
 
 	r := mux.NewRouter()
 	r.HandleFunc(baseUrl+"/", svc.homeHandler).Methods(http.MethodGet, http.MethodHead)
@@ -162,8 +174,10 @@ func main() {
 	r.HandleFunc(baseUrl+"/cart/empty", svc.emptyCartHandler).Methods(http.MethodPost)
 	r.HandleFunc(baseUrl+"/setCurrency", svc.setCurrencyHandler).Methods(http.MethodPost)
 	r.HandleFunc(baseUrl+"/logout", svc.logoutHandler).Methods(http.MethodGet)
-	r.HandleFunc(baseUrl+"/login", svc.loginHandler).Methods(http.MethodGet, http.MethodPost)
-	r.HandleFunc(baseUrl+"/register", svc.registerHandler).Methods(http.MethodGet, http.MethodPost)
+	if userAuthEnabled {
+		r.HandleFunc(baseUrl+"/login", svc.loginHandler).Methods(http.MethodGet, http.MethodPost)
+		r.HandleFunc(baseUrl+"/register", svc.registerHandler).Methods(http.MethodGet, http.MethodPost)
+	}
 	r.HandleFunc(baseUrl+"/cart/checkout", svc.placeOrderHandler).Methods(http.MethodPost)
 	r.HandleFunc(baseUrl+"/assistant", svc.assistantHandler).Methods(http.MethodGet)
 	r.PathPrefix(baseUrl + "/static/").Handler(http.StripPrefix(baseUrl+"/static/", http.FileServer(http.Dir("./static/"))))
