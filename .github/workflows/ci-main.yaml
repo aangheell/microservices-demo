@@ -127,6 +127,22 @@ jobs:
         done
         [ "$ok" = 1 ]
 
+    - name: Diagnose build environment
+      if: failure()
+      run: |
+        # Each command may fail (e.g. a dead daemon); keep going and show what we can.
+        echo "::group::docker info"; docker info || true; echo "::endgroup::"
+        echo "::group::docker disk usage"; docker system df || true; echo "::endgroup::"
+        echo "::group::runner disk"; df -h || true; echo "::endgroup::"
+        echo "::group::runner memory"; free -m || true; echo "::endgroup::"
+        # Restart count and last state (e.g. OOMKilled) of the docker sidecar.
+        # Needs "get pods" on actions-runner-system for the arc-runner SA.
+        echo "::group::runner pod status"
+        kubectl get pod "$HOSTNAME" -n actions-runner-system \
+          -o jsonpath='{range .status.containerStatuses[*]}{.name}{" restarts="}{.restartCount}{" last="}{.lastState}{"\n"}{end}' \
+          || echo "(no permission to read runner pod)"
+        echo "::endgroup::"
+
     - name: Attach GHCR pull secret to ServiceAccounts
       run: |
         # Online Boutique gives each service its own ServiceAccount, so the secret
