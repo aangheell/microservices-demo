@@ -108,24 +108,43 @@ jobs:
         # Creates random credentials on first deploy only; never rotates them.
         ./kustomize/components/user-service/create-secret.sh "$NAMESPACE"
 
-    - name: Build + push images, deploy to lab cluster
+    - name: Build + push images
       timeout-minutes: 40
       run: |
         skaffold config set --global local-cluster false
-        # GHCR sometimes answers "denied" for a push that works on retry, so retry.
-        # Images already pushed are skipped on the next attempt.
-        ok=0
-        for i in 1 2 3 4 5; do
-          if skaffold run --default-repo="$REGISTRY" --tag="$GITHUB_SHA" \
-               --namespace="$NAMESPACE" --platform=linux/amd64 --build-concurrency=1 \
-               --status-check=false; then
-            ok=1
-            break
-          fi
-          echo "skaffold run failed (attempt $i of 5), retrying in 20s"
-          sleep 20
+        # The runner's Docker daemon (dind) stores everything on the node's root
+        # disk. Building all images in one go filled a node until the kubelet
+        # evicted the runner pod, so build one image at a time and prune after
+        # each push. shoppingassistantservice is skipped: it isn't deployed.
+        IMAGES="emailservice productcatalogservice recommendationservice shippingservice
+                checkoutservice paymentservice currencyservice cartservice frontend
+                adservice userservice loadgenerator"
+        mkdir -p "$RUNNER_TEMP/builds"
+        for IMG in $IMAGES; do
+          # GHCR sometimes answers "denied" for a push that works on retry, so retry.
+          ok=0
+          for i in 1 2 3; do
+            if skaffold build -b "$IMG" --push --default-repo="$REGISTRY" --tag="$GITHUB_SHA" \
+                 --platform=linux/amd64 --file-output="$RUNNER_TEMP/builds/$IMG.json"; then
+              ok=1
+              break
+            fi
+            echo "build of $IMG failed (attempt $i of 3), retrying in 20s"
+            sleep 20
+          done
+          [ "$ok" = 1 ] || exit 1
+          # The image is in the registry now; drop it and its build cache locally.
+          docker system prune -af >/dev/null
+          echo "pushed $IMG; Docker disk usage now:"
+          docker system df
         done
-        [ "$ok" = 1 ]
+        jq -s '{builds: (map(.builds) | add)}' "$RUNNER_TEMP"/builds/*.json > "$RUNNER_TEMP/build-artifacts.json"
+
+    - name: Deploy to lab cluster
+      timeout-minutes: 10
+      run: |
+        skaffold deploy --build-artifacts="$RUNNER_TEMP/build-artifacts.json" \
+          --namespace="$NAMESPACE" --status-check=false
 
     - name: Diagnose build environment
       if: failure()
