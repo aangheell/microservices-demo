@@ -49,8 +49,11 @@ build:
     context: src/adservice
   - image: userservice
     context: src/userservice
+  # Tag images by a hash of their build inputs (Dockerfile + context), so an
+  # unchanged service keeps its tag: CI can skip rebuilding it and the deploy
+  # leaves its pods alone.
   tagPolicy:
-    gitCommit: {}
+    inputDigest: {}
   local:
     useDockerCLI: true
     useBuildkit: true
@@ -107,6 +110,8 @@ build:
   artifacts:
   - image: loadgenerator
     context: src/loadgenerator
+  tagPolicy:
+    inputDigest: {}
   local:
     useDockerCLI: true
     useBuildkit: true

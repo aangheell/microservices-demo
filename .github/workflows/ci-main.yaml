@@ -121,10 +121,21 @@ jobs:
                 adservice userservice loadgenerator"
         mkdir -p "$RUNNER_TEMP/builds"
         for IMG in $IMAGES; do
+          # Images are tagged by a hash of their build inputs (tagPolicy:
+          # inputDigest in skaffold.yaml). If that tag is already in the registry,
+          # nothing in the image changed: reuse it instead of rebuilding, which
+          # also means the deploy leaves that service's pods alone.
+          TAG=$(skaffold build -b "$IMG" --default-repo="$REGISTRY" --dry-run -q | jq -r '.builds[0].tag')
+          if [ -n "$TAG" ] && docker manifest inspect "$TAG" >/dev/null 2>&1; then
+            echo "$IMG unchanged, reusing $TAG"
+            jq -n --arg img "$IMG" --arg tag "$TAG" '{builds: [{imageName: $img, tag: $tag}]}' \
+              > "$RUNNER_TEMP/builds/$IMG.json"
+            continue
+          fi
           # GHCR sometimes answers "denied" for a push that works on retry, so retry.
           ok=0
           for i in 1 2 3; do
-            if skaffold build -b "$IMG" --push --default-repo="$REGISTRY" --tag="$GITHUB_SHA" \
+            if skaffold build -b "$IMG" --push --default-repo="$REGISTRY" \
                  --platform=linux/amd64 --file-output="$RUNNER_TEMP/builds/$IMG.json"; then
               ok=1
               break
@@ -141,7 +152,7 @@ jobs:
         # skaffold deploy needs a tag for every artifact in skaffold.yaml, even ones
         # no manifest uses. shoppingassistantservice isn't built or deployed, so
         # give it a placeholder tag (nothing ever pulls it).
-        jq -s --arg sa "$REGISTRY/shoppingassistantservice:$GITHUB_SHA" \
+        jq -s --arg sa "$REGISTRY/shoppingassistantservice:not-deployed" \
           '{builds: ((map(.builds) | add) + [{imageName: "shoppingassistantservice", tag: $sa}])}' \
           "$RUNNER_TEMP"/builds/*.json > "$RUNNER_TEMP/build-artifacts.json"
 
@@ -166,18 +177,6 @@ jobs:
           -o jsonpath='{range .status.containerStatuses[*]}{.name}{" restarts="}{.restartCount}{" last="}{.lastState}{"\n"}{end}' \
           || echo "(no permission to read runner pod)"
         echo "::endgroup::"
-
-    - name: Attach GHCR pull secret to ServiceAccounts
-      run: |
-        # Online Boutique gives each service its own ServiceAccount, so the secret
-        # has to be on all of them, not only "default".
-        for SA in $(kubectl get sa -n "$NAMESPACE" -o name); do
-          kubectl patch "$SA" -n "$NAMESPACE" -p '{"imagePullSecrets":[{"name":"ghcr-pull"}]}'
-        done
-        # Pods created before the patch don't carry the secret: recreate the stuck ones.
-        kubectl get pods -n "$NAMESPACE" --no-headers \
-          | awk '/ImagePullBackOff|ErrImagePull/ {print $1}' \
-          | xargs -r kubectl delete pod -n "$NAMESPACE"
 
     - name: Wait for pods
       timeout-minutes: 20
