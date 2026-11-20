@@ -138,7 +138,12 @@ jobs:
           echo "pushed $IMG; Docker disk usage now:"
           docker system df
         done
-        jq -s '{builds: (map(.builds) | add)}' "$RUNNER_TEMP"/builds/*.json > "$RUNNER_TEMP/build-artifacts.json"
+        # skaffold deploy needs a tag for every artifact in skaffold.yaml, even ones
+        # no manifest uses. shoppingassistantservice isn't built or deployed, so
+        # give it a placeholder tag (nothing ever pulls it).
+        jq -s --arg sa "$REGISTRY/shoppingassistantservice:$GITHUB_SHA" \
+          '{builds: ((map(.builds) | add) + [{imageName: "shoppingassistantservice", tag: $sa}])}' \
+          "$RUNNER_TEMP"/builds/*.json > "$RUNNER_TEMP/build-artifacts.json"
 
     - name: Deploy to lab cluster
       timeout-minutes: 10
