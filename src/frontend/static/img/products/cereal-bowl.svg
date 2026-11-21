@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="700" height="700">
+<defs>
+<radialGradient id="bg" cx="50%" cy="40%" r="75%"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".7"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient>
+<linearGradient id="sheen" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".35"/><stop offset=".5" stop-color="#FFFFFF" stop-opacity="0"/></linearGradient>
+</defs>
+<rect width="400" height="400" fill="#EEEDEA"/>
+<rect width="400" height="400" fill="url(#bg)"/>
+<ellipse cx="200" cy="335" rx="120" ry="14" fill="#000" opacity=".08"/>
+<ellipse cx="200" cy="175" rx="130" ry="35" fill="#E9E2D5"/>
+<path d="M70 175 Q75 300 200 310 Q325 300 330 175 Q300 210 200 210 Q100 210 70 175 Z" fill="#F7F4EE" stroke="#D9D2C4" stroke-width="3"/>
+<ellipse cx="200" cy="177" rx="118" ry="26" fill="#EED9A3"/>
+<g fill="#D9A84E"><circle cx="150" cy="175" r="7"/><circle cx="180" cy="168" r="7"/><circle cx="215" cy="180" r="7"/><circle cx="245" cy="170" r="7"/><circle cx="170" cy="185" r="7"/><circle cx="230" cy="165" r="7"/><circle cx="200" cy="172" r="7"/><circle cx="265" cy="180" r="7"/><circle cx="130" cy="178" r="7"/></g>
+<path d="M78 200 Q110 265 200 268 Q290 265 322 200" fill="none" stroke="#7A9BB5" stroke-width="6"/>
+</svg>

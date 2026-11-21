@@ -16,11 +16,6 @@
 
 {{ define "product" }}
 {{ template "header" . }}
-<div {{ with $.platform_css }} class="{{.}}" {{ end }}>
-  <span class="platform-flag">
-    {{$.platform_name}}
-  </span>
-</div>
 
 <main role="main">
   <div class="h-product container">
@@ -32,6 +27,11 @@
         <div class="product-wrapper">
 
           <h2>{{ $.product.Item.Name }}</h2>
+          <div class="product-categories">
+            {{ range $.product.Item.Categories }}
+            <a href="{{ $.baseUrl }}/?category={{ . }}" class="category-pill">{{ categoryName . }}</a>
+            {{ end }}
+          </div>
           <p class="product-price">{{ renderMoney $.product.Price }}</p>
           <p>{{ $.product.Item.Description }}</p>
 

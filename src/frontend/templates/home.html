@@ -17,11 +17,6 @@
 {{ define "home" }}
 
 {{ template "header" . }}
-<div {{ with $.platform_css }} class="{{.}}" {{ end }}>
-  <span class="platform-flag">
-    {{$.platform_name}}
-  </span>
-</div>
 <main role="main" class="home">
 
   <!-- The image at the top of the home page, displayed on smaller screens. -->
@@ -40,7 +35,13 @@
         <div class="row hot-products-row px-xl-6">
 
           <div class="col-12">
-            <h3>Hot Products</h3>
+            <h3>{{ if $.category }}{{ categoryName $.category }}{{ else }}Hot Products{{ end }}</h3>
+            <nav class="category-bar" aria-label="Product categories">
+              <a href="{{ $.baseUrl }}/" class="category-pill{{ if not $.category }} active{{ end }}">All</a>
+              {{ range $.categories }}
+              <a href="{{ $.baseUrl }}/?category={{ . }}" class="category-pill{{ if eq . $.category }} active{{ end }}">{{ categoryName . }}</a>
+              {{ end }}
+            </nav>
           </div>
 
           {{ range $.products }}

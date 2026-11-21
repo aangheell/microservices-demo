@@ -58,7 +58,7 @@
                 "units": 24,
                 "nanos": 990000000
             },
-            "categories": ["hair", "beauty"]
+            "categories": ["beauty", "hair"]
         },
         {
             "id": "0PUK6V6EV0",
@@ -70,7 +70,7 @@
                 "units": 18,
                 "nanos": 990000000
             },
-            "categories": ["decor", "home"]
+            "categories": ["home", "decor"]
         },
         {
             "id": "LS4PSXUNUM",
@@ -107,6 +107,642 @@
                 "nanos": 990000000
             },
             "categories": ["kitchen"]
+        },
+        {
+            "id": "6FKXDNKWYZ",
+            "name": "Denim Jacket",
+            "description": "A classic mid-wash denim jacket with brass buttons that goes with everything.",
+            "picture": "/static/img/products/denim-jacket.svg",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 79,
+                "nanos": 990000000
+            },
+            "categories": ["clothing", "outerwear"]
+        },
+        {
+            "id": "2JZYNVK8WD",
+            "name": "Wool Beanie",
+            "description": "A chunky ribbed beanie knitted from soft merino wool, topped with a pom-pom.",
+            "picture": "/static/img/products/wool-beanie.svg",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 16,
+                "nanos": 990000000
+            },
+            "categories": ["clothing", "accessories"]
+        },
+        {
+            "id": "EBCSU7KZXW",
+            "name": "Striped T-Shirt",
+            "description": "A breton-style cotton tee with navy stripes and a relaxed fit.",
+            "picture": "/static/img/products/striped-tshirt.svg",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 21,
+                "nanos": 990000000
+            },
+            "categories": ["clothing", "tops"]
+        },
+        {
+            "id": "L2QZZXAD57",
+            "name": "Hoodie",
+            "description": "A cosy fleece-lined hoodie with a kangaroo pocket and drawstring hood.",
+            "picture": "/static/img/products/hoodie.svg",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 44,
+                "nanos": 990000000
+            },
+            "categories": ["clothing", "tops"]
+        },
+        {
+            "id": "QUPL5BSBXF",
+            "name": "Summer Dress",
+            "description": "A light, flowing midi dress in a cheerful floral print, perfect for warm days.",
+            "picture": "/static/img/products/summer-dress.svg",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 49,
+                "nanos": 990000000
+            },
+            "categories": ["clothing"]
+        },
+        {
+            "id": "AT4FX3BPH5",
+            "name": "Chino Shorts",
+            "description": "Tailored cotton chino shorts with a mid-thigh cut and four pockets.",
+            "picture": "/static/img/products/chino-shorts.svg",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 29,
+                "nanos": 990000000
+            },
+            "categories": ["clothing"]
+        },
+        {
+            "id": "OHTA7BW2UZ",
+            "name": "Knit Scarf",
+            "description": "An extra-long knitted scarf in warm mustard, finished with tassels.",
+            "picture": "/static/img/products/knit-scarf.svg",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 24,
+                "nanos": 990000000
+            },
+            "categories": ["clothing", "accessories"]
+        },
+        {
+            "id": "FZXVRXJ2DC",
+            "name": "Cotton Socks (3-Pack)",
+            "description": "Three pairs of breathable combed-cotton socks in everyday colours.",
+            "picture": "/static/img/products/cotton-socks.svg",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 9,
+                "nanos": 990000000
+            },
+            "categories": ["clothing"]
+        },
+        {
+            "id": "GVZYJZG68F",
+            "name": "Sneakers",
+            "description": "Clean white leather sneakers with a cushioned sole for all-day comfort.",
+            "picture": "/static/img/products/sneakers.svg",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 64,
+                "nanos": 990000000
+            },
+            "categories": ["footwear"]
+        },
+        {
+            "id": "CKC8OMNZYK",
+            "name": "Hiking Boots",
+            "description": "Waterproof suede hiking boots with a grippy lug sole for rough trails.",
+            "picture": "/static/img/products/hiking-boots.svg",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 119,
+                "nanos": 990000000
+            },
+            "categories": ["footwear", "sports"]
+        },
+        {
+            "id": "AB5PJCRFC6",
+            "name": "Flip-Flops",
+            "description": "Lightweight rubber flip-flops in ocean blue, made for the beach and pool.",
+            "picture": "/static/img/products/flip-flops.svg",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 12,
+                "nanos": 990000000
+            },
+            "categories": ["footwear"]
+        },
+        {
+            "id": "XXUR71ZDI3",
+            "name": "Rain Boots",
+            "description": "Glossy, fully waterproof rubber rain boots in sunny yellow.",
+            "picture": "/static/img/products/rain-boots.svg",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 39,
+                "nanos": 990000000
+            },
+            "categories": ["footwear"]
+        },
+        {
+            "id": "I0UX641X44",
+            "name": "Leather Wallet",
+            "description": "A slim bifold wallet in vegetable-tanned leather with six card slots.",
+            "picture": "/static/img/products/leather-wallet.svg",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 34,
+                "nanos": 990000000
+            },
+            "categories": ["accessories"]
+        },
+        {
+            "id": "XYU6Y5RBJ2",
+            "name": "Canvas Backpack",
+            "description": "A roomy waxed-canvas backpack with leather straps and a padded laptop sleeve.",
+            "picture": "/static/img/products/canvas-backpack.svg",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 54,
+                "nanos": 990000000
+            },
+            "categories": ["accessories"]
+        },
+        {
+            "id": "8G333O4D21",
+            "name": "Baseball Cap",
+            "description": "A six-panel cotton cap with a curved brim and adjustable strap.",
+            "picture": "/static/img/products/baseball-cap.svg",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 17,
+                "nanos": 990000000
+            },
+            "categories": ["accessories", "clothing"]
+        },
+        {
+            "id": "VV5UZH268J",
+            "name": "Umbrella",
+            "description": "A wind-resistant compact umbrella with a sturdy wooden handle.",
+            "picture": "/static/img/products/umbrella.svg",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 22,
+                "nanos": 990000000
+            },
+            "categories": ["accessories"]
+        },
+        {
+            "id": "HJ6SNJS9OE",
+            "name": "Leather Belt",
+            "description": "A full-grain leather belt with a brushed silver buckle.",
+            "picture": "/static/img/products/leather-belt.svg",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 27,
+                "nanos": 990000000
+            },
+            "categories": ["accessories"]
+        },
+        {
+            "id": "DTGPNAE82U",
+            "name": "Tote Bag",
+            "description": "A heavyweight organic-cotton tote that carries groceries, books and more.",
+            "picture": "/static/img/products/tote-bag.svg",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 15,
+                "nanos": 990000000
+            },
+            "categories": ["accessories"]
+        },
+        {
+            "id": "S2N5T8XH1T",
+            "name": "Silver Necklace",
+            "description": "A delicate sterling silver chain with a polished teardrop pendant.",
+            "picture": "/static/img/products/silver-necklace.svg",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 59,
+                "nanos": 990000000
+            },
+            "categories": ["accessories", "jewelry"]
+        },
+        {
+            "id": "DJWHZAURG8",
+            "name": "Perfume",
+            "description": "An eau de parfum with notes of bergamot, jasmine and warm amber.",
+            "picture": "/static/img/products/perfume.svg",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 69,
+                "nanos": 990000000
+            },
+            "categories": ["beauty"]
+        },
+        {
+            "id": "JPVN2LSFO0",
+            "name": "Lipstick",
+            "description": "A creamy, long-wearing lipstick in a classic red shade.",
+            "picture": "/static/img/products/lipstick.svg",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 14,
+                "nanos": 990000000
+            },
+            "categories": ["beauty"]
+        },
+        {
+            "id": "A1AHYIMBIH",
+            "name": "Face Cream",
+            "description": "A rich daily moisturiser with hyaluronic acid and shea butter.",
+            "picture": "/static/img/products/face-cream.svg",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 26,
+                "nanos": 990000000
+            },
+            "categories": ["beauty"]
+        },
+        {
+            "id": "2FI5ODXKBL",
+            "name": "Hairbrush",
+            "description": "A beechwood paddle brush with natural bristles that smooth and add shine.",
+            "picture": "/static/img/products/hairbrush.svg",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 11,
+                "nanos": 990000000
+            },
+            "categories": ["beauty", "hair"]
+        },
+        {
+            "id": "EFSM3MWW4O",
+            "name": "Nail Polish",
+            "description": "A chip-resistant, quick-dry nail polish in coral pink.",
+            "picture": "/static/img/products/nail-polish.svg",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 7,
+                "nanos": 990000000
+            },
+            "categories": ["beauty"]
+        },
+        {
+            "id": "ZRJIV146DR",
+            "name": "Table Lamp",
+            "description": "A ceramic table lamp with a linen shade that casts a warm, soft glow.",
+            "picture": "/static/img/products/table-lamp.svg",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 45,
+                "nanos": 990000000
+            },
+            "categories": ["home", "decor"]
+        },
+        {
+            "id": "8LVMHP7H65",
+            "name": "Throw Pillow",
+            "description": "A plump cotton-velvet cushion in sage green to brighten any sofa.",
+            "picture": "/static/img/products/throw-pillow.svg",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 19,
+                "nanos": 990000000
+            },
+            "categories": ["home", "decor"]
+        },
+        {
+            "id": "SLVDNC3FC0",
+            "name": "Potted Plant",
+            "description": "A hardy snake plant in a matte terracotta pot. Easy to care for.",
+            "picture": "/static/img/products/potted-plant.svg",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 24,
+                "nanos": 990000000
+            },
+            "categories": ["home", "decor"]
+        },
+        {
+            "id": "EEFR63YSZU",
+            "name": "Wall Clock",
+            "description": "A minimalist wall clock with a silent sweep movement and oak frame.",
+            "picture": "/static/img/products/wall-clock.svg",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 32,
+                "nanos": 990000000
+            },
+            "categories": ["home", "decor"]
+        },
+        {
+            "id": "I9Y8BGVGHG",
+            "name": "Picture Frame",
+            "description": "A solid wood picture frame for 5x7 inch photos, for wall or tabletop.",
+            "picture": "/static/img/products/picture-frame.svg",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 13,
+                "nanos": 990000000
+            },
+            "categories": ["home", "decor"]
+        },
+        {
+            "id": "0VG143WIQL",
+            "name": "Ceramic Vase",
+            "description": "A hand-thrown stoneware vase with a speckled reactive glaze.",
+            "picture": "/static/img/products/ceramic-vase.svg",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 28,
+                "nanos": 990000000
+            },
+            "categories": ["home", "decor"]
+        },
+        {
+            "id": "HBQ3CBNE9Y",
+            "name": "Scented Candle",
+            "description": "A soy wax candle in a glass jar, scented with fig and cedarwood.",
+            "picture": "/static/img/products/scented-candle.svg",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 12,
+                "nanos": 990000000
+            },
+            "categories": ["home", "decor"]
+        },
+        {
+            "id": "55RWTW1ZEJ",
+            "name": "Teapot",
+            "description": "A glazed stoneware teapot with a built-in strainer. Holds 1 litre.",
+            "picture": "/static/img/products/teapot.svg",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 34,
+                "nanos": 990000000
+            },
+            "categories": ["kitchen"]
+        },
+        {
+            "id": "U5HO55XSZX",
+            "name": "Cast Iron Skillet",
+            "description": "A pre-seasoned 10-inch cast iron skillet that lasts a lifetime.",
+            "picture": "/static/img/products/cast-iron-skillet.svg",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 39,
+                "nanos": 990000000
+            },
+            "categories": ["kitchen"]
+        },
+        {
+            "id": "322QCD1ESU",
+            "name": "Chef's Knife",
+            "description": "An 8-inch high-carbon stainless steel chef's knife with a walnut handle.",
+            "picture": "/static/img/products/chefs-knife.svg",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 49,
+                "nanos": 990000000
+            },
+            "categories": ["kitchen"]
+        },
+        {
+            "id": "B5LLQPHNQ8",
+            "name": "Cutting Board",
+            "description": "A thick end-grain acacia cutting board that's gentle on your knives.",
+            "picture": "/static/img/products/cutting-board.svg",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 19,
+                "nanos": 990000000
+            },
+            "categories": ["kitchen"]
+        },
+        {
+            "id": "0A27XM62TZ",
+            "name": "French Press",
+            "description": "A borosilicate glass French press for rich, full-bodied coffee. 1 litre.",
+            "picture": "/static/img/products/french-press.svg",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 29,
+                "nanos": 990000000
+            },
+            "categories": ["kitchen"]
+        },
+        {
+            "id": "I73E7QNK6H",
+            "name": "Wine Glasses (Set of 2)",
+            "description": "A pair of lead-free crystal wine glasses with thin, elegant stems.",
+            "picture": "/static/img/products/wine-glasses.svg",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 24,
+                "nanos": 990000000
+            },
+            "categories": ["kitchen"]
+        },
+        {
+            "id": "5SASUVA9IB",
+            "name": "Whisk",
+            "description": "A balloon whisk with stainless steel wires and a silicone grip.",
+            "picture": "/static/img/products/whisk.svg",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 6,
+                "nanos": 990000000
+            },
+            "categories": ["kitchen"]
+        },
+        {
+            "id": "IGAIJRP7CH",
+            "name": "Cereal Bowl",
+            "description": "A wide, deep porcelain bowl for breakfast, soups and salads.",
+            "picture": "/static/img/products/cereal-bowl.svg",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 9,
+                "nanos": 990000000
+            },
+            "categories": ["kitchen"]
+        },
+        {
+            "id": "7ET2DKB725",
+            "name": "Wireless Headphones",
+            "description": "Over-ear Bluetooth headphones with noise cancelling and 30-hour battery life.",
+            "picture": "/static/img/products/wireless-headphones.svg",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 99,
+                "nanos": 990000000
+            },
+            "categories": ["electronics"]
+        },
+        {
+            "id": "H9GSQ8WIKX",
+            "name": "Bluetooth Speaker",
+            "description": "A rugged, water-resistant portable speaker with deep bass.",
+            "picture": "/static/img/products/bluetooth-speaker.svg",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 49,
+                "nanos": 990000000
+            },
+            "categories": ["electronics"]
+        },
+        {
+            "id": "8DJ81MVKOQ",
+            "name": "Instant Camera",
+            "description": "A retro instant camera that prints credit-card sized photos in seconds.",
+            "picture": "/static/img/products/instant-camera.svg",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 79,
+                "nanos": 990000000
+            },
+            "categories": ["electronics"]
+        },
+        {
+            "id": "N1FX2C50P6",
+            "name": "Mechanical Keyboard",
+            "description": "A compact mechanical keyboard with tactile switches and warm white backlight.",
+            "picture": "/static/img/products/mechanical-keyboard.svg",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 89,
+                "nanos": 990000000
+            },
+            "categories": ["electronics"]
+        },
+        {
+            "id": "XBLOF3VR5V",
+            "name": "Computer Mouse",
+            "description": "An ergonomic wireless mouse with silent clicks and a precise sensor.",
+            "picture": "/static/img/products/computer-mouse.svg",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 24,
+                "nanos": 990000000
+            },
+            "categories": ["electronics"]
+        },
+        {
+            "id": "9PWI69IJQD",
+            "name": "Water Bottle",
+            "description": "A vacuum-insulated steel bottle that keeps drinks cold for 24 hours.",
+            "picture": "/static/img/products/water-bottle.svg",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 18,
+                "nanos": 990000000
+            },
+            "categories": ["sports"]
+        },
+        {
+            "id": "AUEVVRHBJX",
+            "name": "Yoga Mat",
+            "description": "A 6mm non-slip yoga mat with a carrying strap.",
+            "picture": "/static/img/products/yoga-mat.svg",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 29,
+                "nanos": 990000000
+            },
+            "categories": ["sports"]
+        },
+        {
+            "id": "A03LWVQLE3",
+            "name": "Dumbbells (Pair)",
+            "description": "A pair of 5 kg neoprene-coated dumbbells for home workouts.",
+            "picture": "/static/img/products/dumbbells.svg",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 44,
+                "nanos": 990000000
+            },
+            "categories": ["sports"]
+        },
+        {
+            "id": "OO6LCTF59T",
+            "name": "Tennis Racket",
+            "description": "A lightweight graphite tennis racket with a forgiving sweet spot.",
+            "picture": "/static/img/products/tennis-racket.svg",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 69,
+                "nanos": 990000000
+            },
+            "categories": ["sports"]
+        },
+        {
+            "id": "FOX76YUN9I",
+            "name": "Basketball",
+            "description": "A full-size indoor/outdoor composite leather basketball.",
+            "picture": "/static/img/products/basketball.svg",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 27,
+                "nanos": 990000000
+            },
+            "categories": ["sports"]
+        },
+        {
+            "id": "WMZZYC3JK7",
+            "name": "Notebook",
+            "description": "A dotted A5 notebook with 160 pages of fountain-pen-friendly paper.",
+            "picture": "/static/img/products/notebook.svg",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 9,
+                "nanos": 990000000
+            },
+            "categories": ["stationery"]
+        },
+        {
+            "id": "TCVLHBKQ7D",
+            "name": "Fountain Pen",
+            "description": "A refillable fountain pen with a steel nib and a smooth, consistent line.",
+            "picture": "/static/img/products/fountain-pen.svg",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 39,
+                "nanos": 990000000
+            },
+            "categories": ["stationery"]
+        },
+        {
+            "id": "NLPKZG3DUW",
+            "name": "Desk Organizer",
+            "description": "A bamboo desk organiser with compartments for pens, notes and your phone.",
+            "picture": "/static/img/products/desk-organizer.svg",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 21,
+                "nanos": 990000000
+            },
+            "categories": ["stationery", "home"]
+        },
+        {
+            "id": "33DGD3YWGY",
+            "name": "Pencil Set",
+            "description": "Twelve pre-sharpened colouring pencils with rich, blendable pigments.",
+            "picture": "/static/img/products/pencil-set.svg",
+            "priceUsd": {
+                "currencyCode": "USD",
+                "units": 7,
+                "nanos": 990000000
+            },
+            "categories": ["stationery"]
         }
     ]
 }

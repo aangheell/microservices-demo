@@ -130,8 +130,6 @@ spec:
           {{- end }}
           - name: SHOPPING_ASSISTANT_SERVICE_ADDR
             value: "{{ .Values.shoppingAssistantService.name }}:80"
-          - name: ENV_PLATFORM
-            value: {{ .Values.frontend.platform | quote }}
           {{- if .Values.opentelemetryCollector.create }}
           - name: COLLECTOR_SERVICE_ADDR
             value: "{{ .Values.opentelemetryCollector.name }}:4317"
