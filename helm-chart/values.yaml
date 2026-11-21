@@ -254,6 +254,9 @@ cartDatabase:
     publicRepository: true
     # Provide a custom image to take precedence over the default redis image and global images.repository.
     customImage: ""
+    # PersistentVolumeClaim for the Redis append-only file, so carts survive restarts.
+    storage: 1Gi
+    storageClassName: ""
   externalRedisTlsOrigination:
     enable: false
     name: exernal-redis-tls-origination

@@ -202,6 +202,7 @@ func (fe *frontendServer) loginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	setUserCookie(w, r, resp.GetJwtToken())
+	fe.adoptGuestCart(r, log, resp.GetJwtToken())
 	http.Redirect(w, r, baseUrl+"/", http.StatusSeeOther)
 }
 
@@ -227,5 +228,20 @@ func (fe *frontendServer) registerHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 	setUserCookie(w, r, resp.GetJwtToken())
+	fe.adoptGuestCart(r, log, resp.GetJwtToken())
 	http.Redirect(w, r, baseUrl+"/", http.StatusSeeOther)
+}
+
+// adoptGuestCart moves what the visitor put in the cart before signing in
+// into their account's cart, so it follows them to other devices. Failure
+// is logged but never blocks the sign-in: the items stay in the guest cart.
+func (fe *frontendServer) adoptGuestCart(r *http.Request, log logrus.FieldLogger, token string) {
+	claims, err := parseUserToken(token, jwtSecret, time.Now())
+	if err != nil {
+		log.Warnf("not merging guest cart, token from userservice rejected: %v", err)
+		return
+	}
+	if err := mergeCarts(r.Context(), fe, guestCartKey(sessionID(r)), userCartKey(claims.Subject)); err != nil {
+		log.Warnf("could not merge guest cart: %v", err)
+	}
 }
