@@ -219,11 +219,13 @@ metadata:
 ---
 {{- end }}
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: {{ .Values.cartDatabase.inClusterRedis.name }}
   namespace: {{ .Release.Namespace }}
 spec:
+  serviceName: {{ .Values.cartDatabase.inClusterRedis.name }}
+  replicas: 1
   selector:
     matchLabels:
       app: {{ .Values.cartDatabase.inClusterRedis.name }}
@@ -266,6 +268,8 @@ spec:
         {{- else }}
         image: {{ .Values.images.repository }}/redis:alpine
         {{- end }}
+        # appendfsync everysec: a crash loses at most ~1s of cart writes.
+        args: ["--appendonly", "yes", "--appendfsync", "everysec", "--dir", "/data"]
         ports:
         - containerPort: 6379
         readinessProbe:
@@ -286,9 +290,18 @@ spec:
           requests:
             cpu: 70m
             memory: 200Mi
-      volumes:
-      - name: redis-data
-        emptyDir: {}
+  volumeClaimTemplates:
+  - metadata:
+      name: redis-data
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      {{- if .Values.cartDatabase.inClusterRedis.storageClassName }}
+      storageClassName: {{ .Values.cartDatabase.inClusterRedis.storageClassName | quote }}
+      {{- end }}
+      resources:
+        requests:
+          storage: {{ .Values.cartDatabase.inClusterRedis.storage | default "1Gi" }}
 ---
 apiVersion: v1
 kind: Service

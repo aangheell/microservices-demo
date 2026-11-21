@@ -159,6 +159,10 @@ jobs:
     - name: Deploy to lab cluster
       timeout-minutes: 10
       run: |
+        # One-time migration: redis-cart moved from a Deployment (emptyDir) to a
+        # StatefulSet (PVC). Remove the old Deployment so the Service doesn't
+        # route to both. Its carts were not persistent anyway.
+        kubectl delete deployment redis-cart -n "$NAMESPACE" --ignore-not-found
         skaffold deploy --build-artifacts="$RUNNER_TEMP/build-artifacts.json" \
           --namespace="$NAMESPACE" --status-check=false
 

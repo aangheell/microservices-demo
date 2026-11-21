@@ -86,13 +86,17 @@ kind: ServiceAccount
 metadata:
   name: cartservice
 ---
+# Carts live here. A StatefulSet with a PersistentVolumeClaim and the
+# append-only file enabled, so carts survive pod restarts and node reboots.
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: redis-cart
   labels:
     app: redis-cart
 spec:
+  serviceName: redis-cart
+  replicas: 1
   selector:
     matchLabels:
       app: redis-cart
@@ -116,6 +120,8 @@ spec:
           privileged: false
           readOnlyRootFilesystem: true
         image: redis:alpine
+        # appendfsync everysec: a crash loses at most ~1s of cart writes.
+        args: ["--appendonly", "yes", "--appendfsync", "everysec", "--dir", "/data"]
         ports:
         - containerPort: 6379
         readinessProbe:
@@ -136,9 +142,15 @@ spec:
           requests:
             cpu: 70m
             memory: 200Mi
-      volumes:
-      - name: redis-data
-        emptyDir: {}
+  volumeClaimTemplates:
+  - metadata:
+      name: redis-data
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 1Gi
 ---
 apiVersion: v1
 kind: Service

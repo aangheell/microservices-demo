@@ -98,6 +98,9 @@ func ensureSessionID(next http.Handler) http.HandlerFunc {
 				Name:   cookieSessionID,
 				Value:  sessionID,
 				MaxAge: cookieMaxAge,
+				// Site-wide, so logout (which expires cookies at "/") really
+				// drops it and the next visitor gets a fresh guest cart.
+				Path: "/",
 			})
 		} else if err != nil {
 			return
