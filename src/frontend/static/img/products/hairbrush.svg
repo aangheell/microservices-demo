@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="700" height="700">
+<defs>
+<radialGradient id="bg" cx="50%" cy="40%" r="75%"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".7"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient>
+<linearGradient id="sheen" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".35"/><stop offset=".5" stop-color="#FFFFFF" stop-opacity="0"/></linearGradient>
+</defs>
+<rect width="400" height="400" fill="#F3E9EA"/>
+<rect width="400" height="400" fill="url(#bg)"/>
+<ellipse cx="200" cy="335" rx="120" ry="14" fill="#000" opacity=".08"/>
+<g transform="rotate(-30 200 200)"><rect x="180" y="205" width="40" height="130" rx="18" fill="#C48E5C"/>
+<rect x="130" y="65" width="140" height="160" rx="65" fill="#C48E5C"/>
+<rect x="145" y="80" width="110" height="130" rx="52" fill="#3A2A20"/>
+<g fill="#E8D9C4"><circle cx="160" cy="100" r="4"/><circle cx="160" cy="116" r="4"/><circle cx="160" cy="132" r="4"/><circle cx="160" cy="148" r="4"/><circle cx="160" cy="164" r="4"/><circle cx="160" cy="180" r="4"/><circle cx="160" cy="196" r="4"/><circle cx="176" cy="100" r="4"/><circle cx="176" cy="116" r="4"/><circle cx="176" cy="132" r="4"/><circle cx="176" cy="148" r="4"/><circle cx="176" cy="164" r="4"/><circle cx="176" cy="180" r="4"/><circle cx="176" cy="196" r="4"/><circle cx="192" cy="100" r="4"/><circle cx="192" cy="116" r="4"/><circle cx="192" cy="132" r="4"/><circle cx="192" cy="148" r="4"/><circle cx="192" cy="164" r="4"/><circle cx="192" cy="180" r="4"/><circle cx="192" cy="196" r="4"/><circle cx="208" cy="100" r="4"/><circle cx="208" cy="116" r="4"/><circle cx="208" cy="132" r="4"/><circle cx="208" cy="148" r="4"/><circle cx="208" cy="164" r="4"/><circle cx="208" cy="180" r="4"/><circle cx="208" cy="196" r="4"/><circle cx="224" cy="100" r="4"/><circle cx="224" cy="116" r="4"/><circle cx="224" cy="132" r="4"/><circle cx="224" cy="148" r="4"/><circle cx="224" cy="164" r="4"/><circle cx="224" cy="180" r="4"/><circle cx="224" cy="196" r="4"/><circle cx="240" cy="100" r="4"/><circle cx="240" cy="116" r="4"/><circle cx="240" cy="132" r="4"/><circle cx="240" cy="148" r="4"/><circle cx="240" cy="164" r="4"/><circle cx="240" cy="180" r="4"/><circle cx="240" cy="196" r="4"/></g></g>
+</svg>

@@ -21,7 +21,6 @@ import (
 	"html/template"
 	"io"
 	"math/rand"
-	"net"
 	"net/http"
 	"os"
 	"strconv"
@@ -37,11 +36,6 @@ import (
 	"github.com/GoogleCloudPlatform/microservices-demo/src/frontend/validator"
 )
 
-type platformDetails struct {
-	css      string
-	provider string
-}
-
 var (
 	frontendMessage  = strings.TrimSpace(os.Getenv("FRONTEND_MESSAGE"))
 	isCymbalBrand    = "true" == strings.ToLower(os.Getenv("CYMBAL_BRANDING"))
@@ -50,11 +44,9 @@ var (
 				Funcs(template.FuncMap{
 			"renderMoney":        renderMoney,
 			"renderCurrencyLogo": renderCurrencyLogo,
+			"categoryName":       categoryName,
 		}).ParseGlob("templates/*.html"))
-	plat platformDetails
 )
-
-var validEnvs = []string{"local", "gcp", "azure", "aws", "onprem", "alibaba"}
 
 func (fe *frontendServer) homeHandler(w http.ResponseWriter, r *http.Request) {
 	log := r.Context().Value(ctxKeyLog{}).(logrus.FieldLogger)
@@ -75,6 +67,14 @@ func (fe *frontendServer) homeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	categories := primaryCategories(products)
+	category := selectedCategory(r, products)
+	products = filterByCategory(products, category)
+	var adCategories []string
+	if category != "" {
+		adCategories = []string{category}
+	}
+
 	type productView struct {
 		Item  *pb.Product
 		Price *pb.Money
@@ -89,55 +89,17 @@ func (fe *frontendServer) homeHandler(w http.ResponseWriter, r *http.Request) {
 		ps[i] = productView{p, price}
 	}
 
-	// Set ENV_PLATFORM (default to local if not set; use env var if set; otherwise detect GCP, which overrides env)_
-	var env = os.Getenv("ENV_PLATFORM")
-	// Only override from env variable if set + valid env
-	if env == "" || stringinSlice(validEnvs, env) == false {
-		fmt.Println("env platform is either empty or invalid")
-		env = "local"
-	}
-	// Autodetect GCP
-	addrs, err := net.LookupHost("metadata.google.internal.")
-	if err == nil && len(addrs) >= 0 {
-		log.Debugf("Detected Google metadata server: %v, setting ENV_PLATFORM to GCP.", addrs)
-		env = "gcp"
-	}
-
-	log.Debugf("ENV_PLATFORM is: %s", env)
-	plat = platformDetails{}
-	plat.setPlatformDetails(strings.ToLower(env))
-
 	if err := templates.ExecuteTemplate(w, "home", injectCommonTemplateData(r, map[string]interface{}{
 		"show_currency": true,
 		"currencies":    currencies,
 		"products":      ps,
 		"cart_size":     cartSize(cart),
 		"banner_color":  os.Getenv("BANNER_COLOR"), // illustrates canary deployments
-		"ad":            fe.chooseAd(r.Context(), []string{}, log),
+		"ad":            fe.chooseAd(r.Context(), adCategories, log),
+		"categories":    categories,
+		"category":      category,
 	})); err != nil {
 		log.Error(err)
-	}
-}
-
-func (plat *platformDetails) setPlatformDetails(env string) {
-	if env == "aws" {
-		plat.provider = "AWS"
-		plat.css = "aws-platform"
-	} else if env == "onprem" {
-		plat.provider = "On-Premises"
-		plat.css = "onprem-platform"
-	} else if env == "azure" {
-		plat.provider = "Azure"
-		plat.css = "azure-platform"
-	} else if env == "gcp" {
-		plat.provider = "Google Cloud"
-		plat.css = "gcp-platform"
-	} else if env == "alibaba" {
-		plat.provider = "Alibaba Cloud"
-		plat.css = "alibaba-platform"
-	} else {
-		plat.provider = "local"
-		plat.css = "local"
 	}
 }
 
@@ -554,8 +516,6 @@ func injectCommonTemplateData(r *http.Request, payload map[string]interface{}) m
 		"session_id":        sessionID(r),
 		"request_id":        r.Context().Value(ctxKeyRequestID{}),
 		"user_currency":     currentCurrency(r),
-		"platform_css":      plat.css,
-		"platform_name":     plat.provider,
 		"is_cymbal_brand":   isCymbalBrand,
 		"user_enabled":      userAuthEnabled,
 		"is_logged_in":      isLoggedIn(r),
@@ -626,13 +586,4 @@ func renderCurrencyLogo(currencyCode string) string {
 		logo = val
 	}
 	return logo
-}
-
-func stringinSlice(slice []string, val string) bool {
-	for _, item := range slice {
-		if item == val {
-			return true
-		}
-	}
-	return false
 }

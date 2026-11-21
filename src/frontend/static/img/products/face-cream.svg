@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="700" height="700">
+<defs>
+<radialGradient id="bg" cx="50%" cy="40%" r="75%"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".7"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient>
+<linearGradient id="sheen" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".35"/><stop offset=".5" stop-color="#FFFFFF" stop-opacity="0"/></linearGradient>
+</defs>
+<rect width="400" height="400" fill="#F3E9EA"/>
+<rect width="400" height="400" fill="url(#bg)"/>
+<ellipse cx="200" cy="335" rx="120" ry="14" fill="#000" opacity=".08"/>
+<rect x="110" y="175" width="180" height="140" rx="22" fill="#F7F3EE"/>
+<rect x="105" y="130" width="190" height="60" rx="18" fill="#D9C3A5"/>
+<rect x="105" y="130" width="190" height="20" rx="10" fill="#E6D3B8"/>
+<rect x="140" y="225" width="120" height="50" rx="6" fill="#E9DFD2"/>
+<line x1="160" y1="245" x2="240" y2="245" stroke="#B9A07C" stroke-width="4"/>
+<line x1="175" y1="260" x2="225" y2="260" stroke="#B9A07C" stroke-width="3"/>
+</svg>

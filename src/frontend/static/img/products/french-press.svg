@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="700" height="700">
+<defs>
+<radialGradient id="bg" cx="50%" cy="40%" r="75%"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".7"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient>
+<linearGradient id="sheen" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".35"/><stop offset=".5" stop-color="#FFFFFF" stop-opacity="0"/></linearGradient>
+</defs>
+<rect width="400" height="400" fill="#EEEDEA"/>
+<rect width="400" height="400" fill="url(#bg)"/>
+<ellipse cx="200" cy="335" rx="120" ry="14" fill="#000" opacity=".08"/>
+<line x1="200" y1="70" x2="200" y2="105" stroke="#3A3A3A" stroke-width="6"/>
+<circle cx="200" cy="66" r="10" fill="#2B2B2B"/>
+<rect x="135" y="100" width="130" height="18" rx="4" fill="#2B2B2B"/>
+<rect x="140" y="118" width="120" height="190" rx="8" fill="#DCE8EC" opacity=".8"/>
+<rect x="143" y="190" width="114" height="115" rx="6" fill="#5A3A22"/>
+<rect x="143" y="180" width="114" height="14" fill="#B98B5E"/>
+<path d="M260 140 Q310 140 310 190 L310 240 Q310 280 262 280" fill="none" stroke="#2B2B2B" stroke-width="12"/>
+<rect x="132" y="300" width="136" height="20" rx="4" fill="#2B2B2B"/>
+</svg>

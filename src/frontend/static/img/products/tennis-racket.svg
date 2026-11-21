@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="700" height="700">
+<defs>
+<radialGradient id="bg" cx="50%" cy="40%" r="75%"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".7"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient>
+<linearGradient id="sheen" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".35"/><stop offset=".5" stop-color="#FFFFFF" stop-opacity="0"/></linearGradient>
+</defs>
+<rect width="400" height="400" fill="#E8EEEA"/>
+<rect width="400" height="400" fill="url(#bg)"/>
+<ellipse cx="200" cy="335" rx="120" ry="14" fill="#000" opacity=".08"/>
+<g transform="rotate(-30 200 200)"><ellipse cx="200" cy="140" rx="75" ry="95" fill="none" stroke="#2F5D8A" stroke-width="12"/>
+<clipPath id="str"><ellipse cx="200" cy="140" rx="70" ry="90"/></clipPath>
+<g clip-path="url(#str)" stroke="#DADADA" stroke-width="2"><line x1="135" y1="40" x2="135" y2="240"/><line x1="148" y1="40" x2="148" y2="240"/><line x1="161" y1="40" x2="161" y2="240"/><line x1="174" y1="40" x2="174" y2="240"/><line x1="187" y1="40" x2="187" y2="240"/><line x1="200" y1="40" x2="200" y2="240"/><line x1="213" y1="40" x2="213" y2="240"/><line x1="226" y1="40" x2="226" y2="240"/><line x1="239" y1="40" x2="239" y2="240"/><line x1="252" y1="40" x2="252" y2="240"/><line x1="265" y1="40" x2="265" y2="240"/><line x1="120" y1="60" x2="280" y2="60"/><line x1="120" y1="73" x2="280" y2="73"/><line x1="120" y1="86" x2="280" y2="86"/><line x1="120" y1="99" x2="280" y2="99"/><line x1="120" y1="112" x2="280" y2="112"/><line x1="120" y1="125" x2="280" y2="125"/><line x1="120" y1="138" x2="280" y2="138"/><line x1="120" y1="151" x2="280" y2="151"/><line x1="120" y1="164" x2="280" y2="164"/><line x1="120" y1="177" x2="280" y2="177"/><line x1="120" y1="190" x2="280" y2="190"/><line x1="120" y1="203" x2="280" y2="203"/><line x1="120" y1="216" x2="280" y2="216"/><line x1="120" y1="229" x2="280" y2="229"/></g>
+<path d="M185 232 L200 260 L215 232" fill="#2F5D8A"/>
+<rect x="190" y="255" width="20" height="95" rx="6" fill="#2B2B2B"/></g>
+<circle cx="300" cy="300" r="26" fill="#D8E35A"/>
+<path d="M278 288 Q300 300 322 288 M278 312 Q300 300 322 312" fill="none" stroke="#FFF" stroke-width="3"/>
+</svg>

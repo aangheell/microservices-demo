@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="700" height="700">
+<defs>
+<radialGradient id="bg" cx="50%" cy="40%" r="75%"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".7"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient>
+<linearGradient id="sheen" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".35"/><stop offset=".5" stop-color="#FFFFFF" stop-opacity="0"/></linearGradient>
+</defs>
+<rect width="400" height="400" fill="#ECEDE8"/>
+<rect width="400" height="400" fill="url(#bg)"/>
+<ellipse cx="200" cy="335" rx="120" ry="14" fill="#000" opacity=".08"/>
+<path d="M165 230 Q135 130 147 90 Q126 150 173 230 Z" fill="#3E7A4A"/><path d="M185 230 Q177 100 180 60 Q175 120 193 230 Z" fill="#4C8C58"/><path d="M200 230 Q215 115 209 75 Q220 135 208 230 Z" fill="#3E7A4A"/><path d="M215 230 Q250 145 236 105 Q260 165 223 230 Z" fill="#4C8C58"/><path d="M180 230 Q210 160 198 120 Q219 180 188 230 Z" fill="#5B9C66"/><path d="M140 225 L260 225 L245 320 L155 320 Z" fill="#C46F4B"/>
+<rect x="132" y="215" width="136" height="24" rx="5" fill="#B05F3D"/>
+</svg>
