@@ -42,11 +42,9 @@ jobs:
     - name: Go Unit Tests
       timeout-minutes: 10
       run: |
-        for SERVICE in "shippingservice" "productcatalogservice" "frontend"; do
+        for SERVICE in shippingservice productcatalogservice frontend checkoutservice; do
           echo "testing $SERVICE..."
-          pushd src/$SERVICE
-          go test
-          popd
+          (cd src/$SERVICE && go test ./...)
         done
     - uses: actions/setup-python@v5
       with:

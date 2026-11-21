@@ -174,7 +174,7 @@ func main() {
 	r.HandleFunc(baseUrl+"/cart", svc.addToCartHandler).Methods(http.MethodPost)
 	r.HandleFunc(baseUrl+"/cart/empty", svc.emptyCartHandler).Methods(http.MethodPost)
 	r.HandleFunc(baseUrl+"/setCurrency", svc.setCurrencyHandler).Methods(http.MethodPost)
-	r.HandleFunc(baseUrl+"/logout", svc.logoutHandler).Methods(http.MethodGet)
+	r.HandleFunc(baseUrl+"/logout", svc.logoutHandler).Methods(http.MethodPost)
 	if userAuthEnabled {
 		r.HandleFunc(baseUrl+"/login", svc.loginHandler).Methods(http.MethodGet, http.MethodPost)
 		r.HandleFunc(baseUrl+"/register", svc.registerHandler).Methods(http.MethodGet, http.MethodPost)
@@ -188,6 +188,7 @@ func main() {
 	r.HandleFunc(baseUrl+"/bot", svc.chatBotHandler).Methods(http.MethodPost)
 
 	var handler http.Handler = r
+	handler = rejectCrossSiteWrites(handler)           // CSRF protection for POSTs
 	handler = &logHandler{log: log, next: handler}     // add logging
 	handler = ensureSessionID(handler)                 // add session ID
 	handler = otelhttp.NewHandler(handler, "frontend") // add OTel tracing

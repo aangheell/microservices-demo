@@ -1,16 +1,6 @@
-# Copyright 2020 Google LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#      http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# Pull request checks: unit tests plus a build of every image the PR changes,
+# on the lab runner. Nothing is pushed or deployed; ci-main.yaml does that
+# after merge.
 
 name: "Continuous Integration - Pull Request"
 on:
@@ -26,14 +16,20 @@ on:
       - 'helm-chart/**'
       - '.github/workflows/helm-chart-ci.yaml'
 
-# Ensure this workflow only runs for the most recent commit of a pull-request
+permissions:
+  contents: read
+
+# Only the newest commit of a PR matters.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
   code-tests:
-    runs-on: [self-hosted, is-enabled]
+    # The repo is public and the lab runner can reach the cluster, so never run
+    # code from a fork's PR on it. PRs from branches of this repo only.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, lab-k8s]
     steps:
     - uses: actions/checkout@v5
     - uses: actions/setup-dotnet@v5
@@ -44,14 +40,15 @@ jobs:
     - uses: actions/setup-go@v6
       with:
         go-version: '1.25'
+        cache: false
     - name: Go Unit Tests
       timeout-minutes: 10
       run: |
-        for GO_PACKAGE in "shippingservice" "productcatalogservice" "frontend" "frontend/validator"; do
-          echo "Testing $GO_PACKAGE..."
-          pushd src/$GO_PACKAGE
-          go test
-          popd
+        # ./... so sub-packages (frontend/money, frontend/validator,
+        # checkoutservice/money) are tested too.
+        for SERVICE in shippingservice productcatalogservice frontend checkoutservice; do
+          echo "testing $SERVICE..."
+          (cd src/$SERVICE && go test ./...)
         done
     - uses: actions/setup-python@v5
       with:
@@ -68,101 +65,51 @@ jobs:
       run: |
         dotnet test src/cartservice/
 
-  deployment-tests:
-    runs-on: [self-hosted, is-enabled]
+  build-images:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, lab-k8s]
     needs: code-tests
-    strategy:
-      matrix:
-        profile: ["local-code"]
-      fail-fast: true
+    env:
+      REGISTRY: ghcr.io/${{ github.repository }}
     steps:
     - uses: actions/checkout@v5
-      with:
-        ref: ${{github.event.pull_request.head.sha}}
-    - name: Build + Deploy PR images to GKE
-      timeout-minutes: 20
-      run: |
-        NAMESPACE="pr${PR_NUMBER}"
-        echo "::set-env name=NAMESPACE::$NAMESPACE"
 
-        yes | gcloud auth configure-docker us-docker.pkg.dev
-        gcloud container clusters get-credentials $PR_CLUSTER --region $REGION --project $PROJECT_ID
-        cat <<EOF | kubectl apply -f -
-        apiVersion: v1
-        kind: Namespace
-        metadata:
-          name: $NAMESPACE
-        EOF
-        echo Deploying application
+    - name: Install skaffold
+      run: |
+        mkdir -p "$HOME/bin"
+        curl -fsSL -o "$HOME/bin/skaffold" https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64
+        chmod +x "$HOME/bin/skaffold"
+        echo "$HOME/bin" >> "$GITHUB_PATH"
+
+    # GHCR packages are private; log in so the "already built?" check below
+    # can see them. Same secret as ci-main. Fork PRs never reach this job.
+    - name: Log in to GHCR
+      env:
+        GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+      run: |
+        echo "$GHCR_TOKEN" | docker login ghcr.io -u aangheell --password-stdin
+
+    - name: Build changed images (no push)
+      timeout-minutes: 40
+      run: |
         skaffold config set --global local-cluster false
-        skaffold run --default-repo=us-docker.pkg.dev/$PROJECT_ID/refs/pull/$PR_NUMBER --tag=$PR_NUMBER --namespace=$NAMESPACE -p network-policies
-      env:
-        ACTIONS_ALLOW_UNSECURE_COMMANDS: true
-        PR_NUMBER: ${{ github.event.pull_request.number }}
-        PROJECT_ID: "online-boutique-ci"
-        PR_CLUSTER: "prs-gke-cluster"
-        REGION: "us-central1"
-    - name: Wait For Pods
-      timeout-minutes: 20
-      run: |
-        set -x
-        kubectl config set-context --current --namespace=$NAMESPACE
-        kubectl rollout status --timeout=1000s statefulset/redis-cart
-        kubectl wait --for=condition=available --timeout=1000s deployment/adservice
-        kubectl wait --for=condition=available --timeout=1000s deployment/cartservice
-        kubectl wait --for=condition=available --timeout=1000s deployment/checkoutservice
-        kubectl wait --for=condition=available --timeout=1000s deployment/currencyservice
-        kubectl wait --for=condition=available --timeout=1000s deployment/emailservice
-        kubectl wait --for=condition=available --timeout=1000s deployment/frontend
-        kubectl wait --for=condition=available --timeout=1000s deployment/loadgenerator
-        kubectl wait --for=condition=available --timeout=1000s deployment/paymentservice
-        kubectl wait --for=condition=available --timeout=1000s deployment/productcatalogservice
-        kubectl wait --for=condition=available --timeout=1000s deployment/recommendationservice
-        kubectl wait --for=condition=available --timeout=1000s deployment/shippingservice
-    - name: Query EXTERNAL_IP for staging
-      timeout-minutes: 5
-      run: |
-        set -x
-        NAMESPACE="pr${PR_NUMBER}"
-        get_externalIP() {
-          kubectl get service frontend-external --namespace $NAMESPACE -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
-        }
-        until [[ -n "$(get_externalIP)" ]]; do
-          echo "Querying for external IP for frontend-external on namespace: $NAMESPACE{}"
-        sleep 3
+        # Same idea as ci-main: an image whose input-digest tag is already in
+        # GHCR is unchanged, so skip it. Build the rest one at a time and
+        # prune after each, so the runner's disk doesn't fill up.
+        IMAGES="emailservice productcatalogservice recommendationservice shippingservice
+                checkoutservice paymentservice currencyservice cartservice frontend
+                adservice userservice loadgenerator"
+        BUILT=""
+        for IMG in $IMAGES; do
+          TAG=$(skaffold build -b "$IMG" --default-repo="$REGISTRY" --dry-run -q | jq -r '.builds[0].tag')
+          if [ -n "$TAG" ] && docker manifest inspect "$TAG" >/dev/null 2>&1; then
+            echo "$IMG unchanged"
+            continue
+          fi
+          echo "::group::building $IMG"
+          skaffold build -b "$IMG" --default-repo="$REGISTRY" --push=false --platform=linux/amd64
+          echo "::endgroup::"
+          docker system prune -af >/dev/null
+          BUILT="$BUILT $IMG"
         done
-        EXTERNAL_IP=$(get_externalIP)
-        echo "::set-env name=EXTERNAL_IP::$EXTERNAL_IP"
-      env:
-        ACTIONS_ALLOW_UNSECURE_COMMANDS: true
-        PR_NUMBER: ${{ github.event.pull_request.number }}
-    - name: Smoke Test
-      timeout-minutes: 5
-      run: |
-        set -x
-        # start fresh loadgenerator pod
-        kubectl delete pod -l app=loadgenerator
-        # wait for requests to come in
-        REQUEST_COUNT="0"
-        while [[ "$REQUEST_COUNT"  -lt "50"  ]]; do
-            sleep 5
-            REQUEST_COUNT=$(kubectl logs -l app=loadgenerator | grep Aggregated | awk '{print $2}')
-        done
-        # ensure there are no errors hitting endpoints
-        ERROR_COUNT=$(kubectl logs -l app=loadgenerator | grep Aggregated | awk '{print $3}' | sed "s/[(][^)]*[)]//g")
-        if [[ "$ERROR_COUNT" -gt "0" ]]; then
-          exit 1
-        fi
-    - name: Comment EXTERNAL_IP
-      timeout-minutes: 5
-      env:
-          COMMENTS_URL: ${{ github.event.pull_request.comments_url }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-          curl \
-            -X POST \
-            $COMMENTS_URL \
-            -H "Content-Type: application/json" \
-            -H "Authorization: token $GITHUB_TOKEN" \
-            --data '{ "body": "🚲 PR staged at '"http://${EXTERNAL_IP}"'"}'
-          sleep 60
+        echo "built:${BUILT:- nothing (no image inputs changed)}" | tee -a "$GITHUB_STEP_SUMMARY"
