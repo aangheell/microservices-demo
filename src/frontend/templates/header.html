@@ -86,7 +86,9 @@
                     <div class="h-controls d-flex align-items-center">
                         <div class="h-control" style="margin-left: 20px;">
                             {{ if $.is_logged_in }}
-                            <a href="{{ $.baseUrl }}/logout" class="btn btn-sm btn-outline-secondary" style="font-size: 13px; text-decoration: none; padding: 4px 10px;">Sign Out</a>
+                            <form method="POST" action="{{ $.baseUrl }}/logout" class="m-0">
+                                <button type="submit" class="btn btn-sm btn-outline-secondary" style="font-size: 13px; padding: 4px 10px;">Sign Out</button>
+                            </form>
                             {{ else }}
                             <a href="{{ $.baseUrl }}/login" class="btn btn-sm btn-outline-secondary" style="font-size: 13px; text-decoration: none; padding: 4px 10px;">Sign In</a>
                             {{ end }}

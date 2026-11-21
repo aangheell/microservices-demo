@@ -72,7 +72,7 @@ def checkout(l):
     })
     
 def logout(l):
-    l.client.get('/logout')  
+    l.client.post('/logout')
 
 
 class UserBehavior(TaskSet):

@@ -17,8 +17,9 @@ package main
 import (
 	"context"
 	"net/http"
-	"time"
+	"net/url"
 	"os"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -100,7 +101,10 @@ func ensureSessionID(next http.Handler) http.HandlerFunc {
 				MaxAge: cookieMaxAge,
 				// Site-wide, so logout (which expires cookies at "/") really
 				// drops it and the next visitor gets a fresh guest cart.
-				Path: "/",
+				Path:     "/",
+				HttpOnly: true, // no script needs it; keeps it away from XSS
+				Secure:   isSecureRequest(r),
+				SameSite: http.SameSiteLaxMode,
 			})
 		} else if err != nil {
 			return
@@ -111,4 +115,41 @@ func ensureSessionID(next http.Handler) http.HandlerFunc {
 		r = r.WithContext(ctx)
 		next.ServeHTTP(w, r)
 	}
+}
+
+// rejectCrossSiteWrites blocks state-changing requests (POST etc.) that a
+// browser sends on behalf of another site: cross-site request forgery, e.g.
+// a page elsewhere silently logging users out or filling their cart.
+// Browsers label every request with Sec-Fetch-Site and send Origin on
+// cross-origin POSTs; clients that send neither (curl, the load generator)
+// aren't browsers carrying a victim's cookies, so they pass.
+func rejectCrossSiteWrites(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet || r.Method == http.MethodHead || r.Method == http.MethodOptions {
+			next.ServeHTTP(w, r)
+			return
+		}
+		if !sameOriginRequest(r) {
+			http.Error(w, "cross-site request rejected", http.StatusForbidden)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func sameOriginRequest(r *http.Request) bool {
+	switch r.Header.Get("Sec-Fetch-Site") {
+	case "same-origin", "none": // "none": typed URL or bookmark
+		return true
+	case "":
+		// Older browser: fall back to Origin.
+	default: // same-site, cross-site
+		return false
+	}
+	origin := r.Header.Get("Origin")
+	if origin == "" {
+		return true
+	}
+	u, err := url.Parse(origin)
+	return err == nil && u.Host != "" && u.Host == r.Host
 }
