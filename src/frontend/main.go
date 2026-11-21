@@ -57,6 +57,7 @@ var (
 		"JPY": true,
 		"GBP": true,
 		"TRY": true,
+		"RON": true,
 	}
 
 	baseUrl = ""

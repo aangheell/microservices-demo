@@ -568,7 +568,12 @@ func cartSize(c []*pb.CartItem) int {
 
 func renderMoney(money pb.Money) string {
 	currencyLogo := renderCurrencyLogo(money.GetCurrencyCode())
-	return fmt.Sprintf("%s%d.%02d", currencyLogo, money.GetUnits(), money.GetNanos()/10000000)
+	amount := fmt.Sprintf("%d.%02d", money.GetUnits(), money.GetNanos()/10000000)
+	if money.GetCurrencyCode() == "RON" {
+		// Romanian leu is written after the amount: "123.45 lei".
+		return amount + " " + currencyLogo
+	}
+	return currencyLogo + amount
 }
 
 func renderCurrencyLogo(currencyCode string) string {
@@ -579,6 +584,7 @@ func renderCurrencyLogo(currencyCode string) string {
 		"EUR": "€",
 		"TRY": "₺",
 		"GBP": "£",
+		"RON": "lei",
 	}
 
 	logo := "$" //default
