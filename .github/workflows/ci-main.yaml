@@ -127,8 +127,12 @@ jobs:
           # also means the deploy leaves that service's pods alone.
           TAG=$(skaffold build -b "$IMG" --default-repo="$REGISTRY" --dry-run -q | jq -r '.builds[0].tag')
           if [ -n "$TAG" ] && docker manifest inspect "$TAG" >/dev/null 2>&1; then
-            echo "$IMG unchanged, reusing $TAG"
-            jq -n --arg img "$IMG" --arg tag "$TAG" '{builds: [{imageName: $img, tag: $tag}]}' \
+            # Pin the digest, as a fresh build does ("tag@sha256:..."), so the
+            # pod spec is byte-identical to the last deploy and pods don't restart.
+            DIGEST=$(docker buildx imagetools inspect "$TAG" --format '{{json .Manifest}}' | jq -r '.digest // empty')
+            REF="$TAG${DIGEST:+@$DIGEST}"
+            echo "$IMG unchanged, reusing $REF"
+            jq -n --arg img "$IMG" --arg tag "$REF" '{builds: [{imageName: $img, tag: $tag}]}' \
               > "$RUNNER_TEMP/builds/$IMG.json"
             continue
           fi
@@ -163,8 +167,12 @@ jobs:
         # StatefulSet (PVC). Remove the old Deployment so the Service doesn't
         # route to both. Its carts were not persistent anyway.
         kubectl delete deployment redis-cart -n "$NAMESPACE" --ignore-not-found
+        # Skaffold stamps a random skaffold.dev/run-id label on every pod
+        # template, which would restart every pod on every deploy. Pin it, so
+        # only services whose image or manifest changed roll out.
         skaffold deploy --build-artifacts="$RUNNER_TEMP/build-artifacts.json" \
-          --namespace="$NAMESPACE" --status-check=false
+          --namespace="$NAMESPACE" --status-check=false \
+          --label=skaffold.dev/run-id=ci-main
 
     - name: Diagnose build environment
       if: failure()
@@ -185,13 +193,15 @@ jobs:
     - name: Wait for pods
       timeout-minutes: 20
       run: |
-        for D in redis-cart adservice cartservice checkoutservice currencyservice \
+        for D in adservice cartservice checkoutservice currencyservice \
                  emailservice frontend loadgenerator paymentservice \
                  productcatalogservice recommendationservice shippingservice \
                  userservice; do
           kubectl wait --for=condition=available --timeout=1000s deployment/$D -n "$NAMESPACE"
         done
-        kubectl rollout status statefulset/postgres-user --timeout=600s -n "$NAMESPACE"
+        for S in redis-cart postgres-user; do
+          kubectl rollout status statefulset/$S --timeout=600s -n "$NAMESPACE"
+        done
 
     - name: Smoke test
       timeout-minutes: 5
