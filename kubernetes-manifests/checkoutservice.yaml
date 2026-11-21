@@ -66,6 +66,9 @@ spec:
             value: "currencyservice:7000"
           - name: CART_SERVICE_ADDR
             value: "cartservice:7070"
+          # Records signed-in users' orders for their order history.
+          - name: USER_SERVICE_ADDR
+            value: "userservice:50052"
           resources:
             requests:
               cpu: 100m

@@ -1,10 +1,16 @@
 # Add user accounts (userservice)
 
-This component adds sign-in and registration to the frontend. It deploys:
+This component adds sign-in, registration and order history to the frontend.
+It deploys:
 
-- `userservice`: a gRPC service (Python) that stores accounts and issues JWTs
-- `postgres-user`: a single-replica Postgres StatefulSet for the accounts
+- `userservice`: a gRPC service (Python) that stores accounts and their
+  orders, and issues JWTs
+- `postgres-user`: a single-replica Postgres StatefulSet for the accounts and
+  orders
 - a patch for the `frontend` that sets `USER_SERVICE_ADDR` and `JWT_SECRET`
+- a patch for `checkoutservice` that sets `USER_SERVICE_ADDR`, so orders placed
+  by signed-in users are recorded and listed on the frontend's `/orders` page
+  (guest orders are not kept)
 
 Without this component, the frontend runs as before and shows no Sign In button.
 

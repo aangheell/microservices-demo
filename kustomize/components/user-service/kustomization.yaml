@@ -38,3 +38,17 @@ patches:
                 secretKeyRef:
                   name: userservice-secret
                   key: jwt-secret
+# Checkout records signed-in users' orders for their order history.
+- patch: |-
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: checkoutservice
+    spec:
+      template:
+        spec:
+          containers:
+          - name: server
+            env:
+            - name: USER_SERVICE_ADDR
+              value: "userservice:50052"

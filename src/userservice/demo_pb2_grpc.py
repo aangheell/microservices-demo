@@ -832,6 +832,16 @@ class UserServiceStub(object):
                 request_serializer=demo__pb2.GetUserRequest.SerializeToString,
                 response_deserializer=demo__pb2.GetUserResponse.FromString,
                 )
+        self.RecordOrder = channel.unary_unary(
+                '/hipstershop.UserService/RecordOrder',
+                request_serializer=demo__pb2.RecordOrderRequest.SerializeToString,
+                response_deserializer=demo__pb2.Empty.FromString,
+                )
+        self.ListOrders = channel.unary_unary(
+                '/hipstershop.UserService/ListOrders',
+                request_serializer=demo__pb2.ListOrdersRequest.SerializeToString,
+                response_deserializer=demo__pb2.ListOrdersResponse.FromString,
+                )
 
 
 class UserServiceServicer(object):
@@ -857,6 +867,20 @@ class UserServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def RecordOrder(self, request, context):
+        """Order history. checkoutservice records every order a signed-in user
+        places; the frontend lists them on the account's orders page.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ListOrders(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_UserServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -874,6 +898,16 @@ def add_UserServiceServicer_to_server(servicer, server):
                     servicer.GetUser,
                     request_deserializer=demo__pb2.GetUserRequest.FromString,
                     response_serializer=demo__pb2.GetUserResponse.SerializeToString,
+            ),
+            'RecordOrder': grpc.unary_unary_rpc_method_handler(
+                    servicer.RecordOrder,
+                    request_deserializer=demo__pb2.RecordOrderRequest.FromString,
+                    response_serializer=demo__pb2.Empty.SerializeToString,
+            ),
+            'ListOrders': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListOrders,
+                    request_deserializer=demo__pb2.ListOrdersRequest.FromString,
+                    response_serializer=demo__pb2.ListOrdersResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -935,5 +969,39 @@ class UserService(object):
         return grpc.experimental.unary_unary(request, target, '/hipstershop.UserService/GetUser',
             demo__pb2.GetUserRequest.SerializeToString,
             demo__pb2.GetUserResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def RecordOrder(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/hipstershop.UserService/RecordOrder',
+            demo__pb2.RecordOrderRequest.SerializeToString,
+            demo__pb2.Empty.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def ListOrders(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/hipstershop.UserService/ListOrders',
+            demo__pb2.ListOrdersRequest.SerializeToString,
+            demo__pb2.ListOrdersResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

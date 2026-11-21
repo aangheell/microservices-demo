@@ -84,8 +84,9 @@
 
                     {{ if $.user_enabled }}
                     <div class="h-controls d-flex align-items-center">
-                        <div class="h-control" style="margin-left: 20px;">
+                        <div class="h-control d-flex align-items-center" style="margin-left: 20px;">
                             {{ if $.is_logged_in }}
+                            <a href="{{ $.baseUrl }}/orders" class="btn btn-sm btn-outline-secondary mr-2" style="font-size: 13px; text-decoration: none; padding: 4px 10px;">Orders</a>
                             <form method="POST" action="{{ $.baseUrl }}/logout" class="m-0">
                                 <button type="submit" class="btn btn-sm btn-outline-secondary" style="font-size: 13px; padding: 4px 10px;">Sign Out</button>
                             </form>

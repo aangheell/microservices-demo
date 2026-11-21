@@ -178,6 +178,7 @@ func main() {
 	if userAuthEnabled {
 		r.HandleFunc(baseUrl+"/login", svc.loginHandler).Methods(http.MethodGet, http.MethodPost)
 		r.HandleFunc(baseUrl+"/register", svc.registerHandler).Methods(http.MethodGet, http.MethodPost)
+		r.HandleFunc(baseUrl+"/orders", svc.ordersHandler).Methods(http.MethodGet, http.MethodHead)
 	}
 	r.HandleFunc(baseUrl+"/cart/checkout", svc.placeOrderHandler).Methods(http.MethodPost)
 	r.HandleFunc(baseUrl+"/assistant", svc.assistantHandler).Methods(http.MethodGet)

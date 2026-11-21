@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"strings"
 	"time"
 
 	"cloud.google.com/go/profiler"
@@ -81,6 +82,11 @@ type checkoutService struct {
 
 	paymentSvcAddr string
 	paymentSvcConn *grpc.ClientConn
+
+	// Optional: with user accounts enabled, orders of signed-in users are
+	// recorded in userservice for their order history.
+	userSvcAddr string
+	userSvcConn *grpc.ClientConn
 }
 
 func main() {
@@ -119,6 +125,11 @@ func main() {
 	mustConnGRPC(ctx, &svc.currencySvcConn, svc.currencySvcAddr)
 	mustConnGRPC(ctx, &svc.emailSvcConn, svc.emailSvcAddr)
 	mustConnGRPC(ctx, &svc.paymentSvcConn, svc.paymentSvcAddr)
+	if svc.userSvcAddr = os.Getenv("USER_SERVICE_ADDR"); svc.userSvcAddr != "" {
+		mustConnGRPC(ctx, &svc.userSvcConn, svc.userSvcAddr)
+	} else {
+		log.Info("USER_SERVICE_ADDR not set, order history disabled")
+	}
 
 	log.Infof("service config: %+v", svc)
 
@@ -269,6 +280,12 @@ func (cs *checkoutService) PlaceOrder(ctx context.Context, req *pb.PlaceOrderReq
 		Items:              prep.orderItems,
 	}
 
+	// The order is paid for and shipped by now, so failing to record it must
+	// not fail the order; it just won't show in the user's history.
+	if err := cs.recordOrder(ctx, req.UserId, orderResult, &total); err != nil {
+		log.Warnf("failed to record order %s in order history: %+v", orderResult.OrderId, err)
+	}
+
 	if err := cs.sendOrderConfirmation(ctx, req.Email, orderResult); err != nil {
 		log.Warnf("failed to send order confirmation to %q: %+v", req.Email, err)
 	} else {
@@ -276,6 +293,32 @@ func (cs *checkoutService) PlaceOrder(ctx context.Context, req *pb.PlaceOrderReq
 	}
 	resp := &pb.PlaceOrderResponse{Order: orderResult}
 	return resp, nil
+}
+
+// The frontend identifies a cart, and so the order's owner, as
+// "user:<account id>" for signed-in users and "guest:<session id>" otherwise.
+const userCartPrefix = "user:"
+
+// orderHistoryUserID returns the account an order belongs to, or "" for a
+// guest order, which has no history to go into.
+func orderHistoryUserID(cartOwner string) string {
+	if id, ok := strings.CutPrefix(cartOwner, userCartPrefix); ok {
+		return id
+	}
+	return ""
+}
+
+func (cs *checkoutService) recordOrder(ctx context.Context, cartOwner string, order *pb.OrderResult, total *pb.Money) error {
+	userID := orderHistoryUserID(cartOwner)
+	if cs.userSvcConn == nil || userID == "" {
+		return nil
+	}
+	_, err := pb.NewUserServiceClient(cs.userSvcConn).RecordOrder(ctx, &pb.RecordOrderRequest{
+		UserId: userID,
+		Order:  order,
+		Total:  total,
+	})
+	return err
 }
 
 type orderPrep struct {

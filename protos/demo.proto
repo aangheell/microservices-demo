@@ -268,6 +268,10 @@ service UserService {
     rpc Register(RegisterRequest) returns (RegisterResponse) {}
     rpc Login(LoginRequest) returns (LoginResponse) {}
     rpc GetUser(GetUserRequest) returns (GetUserResponse) {}
+    // Order history. checkoutservice records every order a signed-in user
+    // places; the frontend lists them on the account's orders page.
+    rpc RecordOrder(RecordOrderRequest) returns (Empty) {}
+    rpc ListOrders(ListOrdersRequest) returns (ListOrdersResponse) {}
 }
 
 message RegisterRequest {
@@ -300,4 +304,26 @@ message GetUserResponse {
     string user_id = 1;
     string email = 2;
     string name = 3;
+}
+
+message RecordOrderRequest {
+    string user_id = 1;
+    OrderResult order = 2;
+    // What was charged, in the currency the user paid in.
+    Money total = 3;
+}
+
+message ListOrdersRequest {
+    string user_id = 1;
+}
+
+message StoredOrder {
+    OrderResult order = 1;
+    Money total = 2;
+    int64 created_at_unix = 3;
+}
+
+message ListOrdersResponse {
+    // Newest first.
+    repeated StoredOrder orders = 1;
 }

@@ -21,7 +21,8 @@ import demo_pb2
 import demo_pb2_grpc
 from grpc_health.v1 import health_pb2
 from grpc_health.v1 import health_pb2_grpc
-from user_store import UserAlreadyExists
+from google.protobuf import json_format
+from user_store import UserAlreadyExists, UserNotFound
 
 from logger import getJSONLogger
 logger = getJSONLogger('userservice-server')
@@ -194,6 +195,53 @@ class UserServicer(demo_pb2_grpc.UserServiceServicer):
         if not user:
             context.abort(grpc.StatusCode.NOT_FOUND, "user not found")
         return demo_pb2.GetUserResponse(user_id=str(user['id']), email=user['email'], name=user['name'])
+
+    def RecordOrder(self, request, context):
+        """Called by checkoutservice after an order is paid for and shipped."""
+        try:
+            user_id = str(uuid.UUID(request.user_id))
+            order_id = str(uuid.UUID(request.order.order_id))
+        except ValueError:
+            context.abort(grpc.StatusCode.INVALID_ARGUMENT, "invalid user_id or order_id")
+        total = request.total
+        if not total.currency_code:
+            context.abort(grpc.StatusCode.INVALID_ARGUMENT, "total is required")
+
+        order_data = json_format.MessageToDict(request.order, preserving_proto_field_name=True)
+        try:
+            inserted = self.store.record_order(
+                order_id, user_id, (total.currency_code, total.units, total.nanos), order_data)
+        except UserNotFound:
+            context.abort(grpc.StatusCode.NOT_FOUND, "user not found")
+        except Exception as e:
+            logger.error(f"DB error on RecordOrder: {type(e).__name__}")
+            context.abort(grpc.StatusCode.UNAVAILABLE, "order store unavailable")
+        logger.info(f"Recorded order_id={order_id} user_id={user_id}"
+                    + ("" if inserted else " (already recorded)"))
+        return demo_pb2.Empty()
+
+    def ListOrders(self, request, context):
+        try:
+            user_id = str(uuid.UUID(request.user_id))
+        except ValueError:
+            context.abort(grpc.StatusCode.INVALID_ARGUMENT, "invalid user_id")
+        try:
+            rows = self.store.list_orders(user_id)
+        except Exception as e:
+            logger.error(f"DB error on ListOrders: {type(e).__name__}")
+            context.abort(grpc.StatusCode.UNAVAILABLE, "order store unavailable")
+
+        resp = demo_pb2.ListOrdersResponse()
+        for row in rows:
+            stored = resp.orders.add()
+            # ignore_unknown_fields: rows written by a newer version may carry
+            # fields this one doesn't know.
+            json_format.ParseDict(row['order_data'], stored.order, ignore_unknown_fields=True)
+            stored.total.currency_code = row['total_currency']
+            stored.total.units = row['total_units']
+            stored.total.nanos = row['total_nanos']
+            stored.created_at_unix = int(row['created_at'].timestamp())
+        return resp
 
 
 class HealthServicer(health_pb2_grpc.HealthServicer):
