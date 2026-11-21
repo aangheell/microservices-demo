@@ -1,3 +1,4 @@
+import datetime
 import uuid
 
 import grpc
@@ -7,7 +8,7 @@ import pytest
 import demo_pb2
 from grpc_health.v1 import health_pb2
 import server
-from user_store import UserAlreadyExists
+from user_store import UserAlreadyExists, UserNotFound
 
 SECRET = 'x' * 32
 
@@ -27,7 +28,9 @@ class FakeContext:
 class FakeStore:
     def __init__(self):
         self.users = {}
+        self.orders = {}
         self.healthy = True
+        self._tick = 0
 
     def create_user(self, email, name, password_hash):
         if email in self.users:
@@ -47,6 +50,25 @@ class FakeStore:
 
     def ping(self):
         return self.healthy
+
+    def record_order(self, order_id, user_id, total, order_data):
+        if not any(str(u['id']) == user_id for u in self.users.values()):
+            raise UserNotFound(user_id)
+        if order_id in self.orders:
+            return False
+        self._tick += 1
+        currency, units, nanos = total
+        self.orders[order_id] = {
+            'id': order_id, 'user_id': user_id, 'total_currency': currency,
+            'total_units': units, 'total_nanos': nanos, 'order_data': order_data,
+            'created_at': datetime.datetime(2026, 1, 1, tzinfo=datetime.timezone.utc)
+                          + datetime.timedelta(minutes=self._tick),
+        }
+        return True
+
+    def list_orders(self, user_id):
+        rows = [o for o in self.orders.values() if o['user_id'] == user_id]
+        return sorted(rows, key=lambda o: o['created_at'], reverse=True)
 
 
 class FakeClock:
@@ -187,3 +209,71 @@ def test_jwt_secret_must_be_long_enough(monkeypatch):
         server.load_jwt_secret()
     monkeypatch.setenv('JWT_SECRET', SECRET)
     assert server.load_jwt_secret() == SECRET
+
+
+def make_order(order_id=None, product='OLJCESPC7Z', qty=2):
+    return demo_pb2.OrderResult(
+        order_id=order_id or str(uuid.uuid4()),
+        shipping_tracking_id='TR-123',
+        shipping_cost=demo_pb2.Money(currency_code='EUR', units=8, nanos=990000000),
+        shipping_address=demo_pb2.Address(street_address='1 Main St', city='Cluj', country='RO', zip_code=400000),
+        items=[demo_pb2.OrderItem(
+            item=demo_pb2.CartItem(product_id=product, quantity=qty),
+            cost=demo_pb2.Money(currency_code='EUR', units=17, nanos=490000000))],
+    )
+
+
+def record(svc, user_id, order, units=43):
+    return svc.RecordOrder(demo_pb2.RecordOrderRequest(
+        user_id=user_id, order=order,
+        total=demo_pb2.Money(currency_code='EUR', units=units, nanos=970000000)), FakeContext())
+
+
+def test_record_and_list_orders_round_trip(svc):
+    user_id = register(svc).user_id
+    first, second = make_order(), make_order(product='66VCHSJNUP', qty=1)
+    record(svc, user_id, first)
+    record(svc, user_id, second, units=26)
+
+    orders = svc.ListOrders(demo_pb2.ListOrdersRequest(user_id=user_id), FakeContext()).orders
+    assert [o.order.order_id for o in orders] == [second.order_id, first.order_id]  # newest first
+    assert orders[1].order == first  # the whole OrderResult survives storage
+    assert (orders[1].total.currency_code, orders[1].total.units, orders[1].total.nanos) == ('EUR', 43, 970000000)
+    assert orders[0].created_at_unix > orders[1].created_at_unix
+
+
+def test_record_order_is_idempotent(svc, store):
+    user_id = register(svc).user_id
+    order = make_order()
+    record(svc, user_id, order)
+    record(svc, user_id, order)
+    assert len(store.orders) == 1
+
+
+def test_orders_are_per_user(svc):
+    alice = register(svc).user_id
+    bob = register(svc, email='bob@example.com', name='Bob').user_id
+    record(svc, alice, make_order())
+    assert svc.ListOrders(demo_pb2.ListOrdersRequest(user_id=bob), FakeContext()).orders == []
+
+
+def test_record_order_rejects_bad_input(svc):
+    user_id = register(svc).user_id
+    with pytest.raises(Aborted) as e:
+        record(svc, 'not-a-uuid', make_order())
+    assert e.value.code == grpc.StatusCode.INVALID_ARGUMENT
+    with pytest.raises(Aborted) as e:
+        record(svc, user_id, make_order(order_id='nope'))
+    assert e.value.code == grpc.StatusCode.INVALID_ARGUMENT
+    with pytest.raises(Aborted) as e:
+        svc.RecordOrder(demo_pb2.RecordOrderRequest(user_id=user_id, order=make_order()), FakeContext())
+    assert e.value.code == grpc.StatusCode.INVALID_ARGUMENT
+    with pytest.raises(Aborted) as e:
+        record(svc, str(uuid.uuid4()), make_order())
+    assert e.value.code == grpc.StatusCode.NOT_FOUND
+
+
+def test_list_orders_rejects_bad_user_id(svc):
+    with pytest.raises(Aborted) as e:
+        svc.ListOrders(demo_pb2.ListOrdersRequest(user_id='x'), FakeContext())
+    assert e.value.code == grpc.StatusCode.INVALID_ARGUMENT

@@ -22,11 +22,32 @@ CREATE TABLE IF NOT EXISTS users (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE UNIQUE INDEX IF NOT EXISTS users_email_key ON users (email);
+
+-- Order history. "order_data" is the OrderResult as JSON (items, shipping
+-- address and cost, tracking ID), so the schema doesn't change when the
+-- proto gains fields.
+CREATE TABLE IF NOT EXISTS orders (
+    id UUID PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    total_currency VARCHAR(3) NOT NULL,
+    total_units BIGINT NOT NULL,
+    total_nanos INTEGER NOT NULL,
+    order_data JSONB NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS orders_user_created_idx ON orders (user_id, created_at DESC);
 """
+
+# Most orders a user's history returns.
+ORDERS_LIST_LIMIT = 50
 
 
 class UserAlreadyExists(Exception):
     """Raised when registering an email that is already taken."""
+
+
+class UserNotFound(Exception):
+    """Raised when recording an order for a user that doesn't exist."""
 
 
 def normalize_email(email):
@@ -170,6 +191,38 @@ class UserStore:
                 row = dict(row)
                 row['id'] = str(row['id'])
                 return row
+        return self._with_conn(run)
+
+    def record_order(self, order_id, user_id, total, order_data):
+        """Store an order. total is (currency, units, nanos); order_data is a
+        JSON-serializable dict. Recording the same order_id twice is a no-op,
+        so callers can retry safely. Returns True if a row was inserted."""
+        currency, units, nanos = total
+
+        def run(conn):
+            with conn.cursor() as cur:
+                cur.execute(
+                    "INSERT INTO orders (id, user_id, total_currency, total_units, total_nanos, order_data) "
+                    "VALUES (%s, %s, %s, %s, %s, %s) ON CONFLICT (id) DO NOTHING",
+                    (str(order_id), str(user_id), currency, units, nanos,
+                     psycopg2.extras.Json(order_data)),
+                )
+                return cur.rowcount == 1
+        try:
+            return self._with_conn(run)
+        except errors.ForeignKeyViolation:
+            raise UserNotFound(user_id)
+
+    def list_orders(self, user_id, limit=ORDERS_LIST_LIMIT):
+        """The user's most recent orders, newest first."""
+        def run(conn):
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                cur.execute(
+                    "SELECT id, total_currency, total_units, total_nanos, order_data, created_at "
+                    "FROM orders WHERE user_id = %s ORDER BY created_at DESC LIMIT %s",
+                    (str(user_id), limit),
+                )
+                return [dict(r) for r in cur.fetchall()]
         return self._with_conn(run)
 
     def close(self):
